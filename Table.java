@@ -3,8 +3,11 @@ import java.util.Scanner;
 public class Table {
 	private static Commander[] player = new Commander[8];
 	private static int num = 2;
-	private static Deck newDeck;
-	private static Deck exDeck;
+	private static Deck newDeck = new Deck();
+	private static Deck exDeck = new Deck();
+	
+	public Card action;
+	public int obj;
 	
 	static int tmpPlayer = 0;
 	
@@ -39,8 +42,11 @@ public class Table {
 			player[tmpPlayer].getCard(newDeck.pop());
 			player[tmpPlayer].getCard(newDeck.pop());
 			while(true) {
-				
+				 player[tmpPlayer].useCard();
+				 exeAction();
+				 if(player[tmpPlayer].endUse())break;
 			}
+			tmpPlayer = (tmpPlayer+1)%2;
 		}
 	}
 	static boolean notEnd() {
@@ -50,5 +56,8 @@ public class Table {
 		}
 		if(playerLeft>1)return true;
 		else return false;
+	}
+	static void exeAction() {
+		
 	}
 }

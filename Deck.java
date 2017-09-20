@@ -4,12 +4,12 @@ import java.util.Collections;
 public class Deck {
 	static final int TOTAL_CARD_NUM = 104;
 	
-	private ArrayList<Card> cont = new ArrayList<Card>();
-	private int tmpNum;
+	public ArrayList<Card> cont = new ArrayList<Card>();
+	public int tmpNum = 0;
 	
 	public void shuffleAll() {
 		for(int i = 0; i < TOTAL_CARD_NUM; i++) {
-			cont.add(new Card((int)(13*Math.random()), (int)(3*Math.random())));
+			push(new Card((int)(13*Math.random()), (int)(3*Math.random())));
 		}
 		Collections.shuffle(cont);
 	}

@@ -28,6 +28,7 @@ public class Commander {
 			handCard = new Deck();
 			equipCard = new Deck();
 			seatNum = seat;
+			break;
 		case 1:
 			masterName = Name.CN_ZRS;
 			masterGroup = Group.CG_COMPUTER;
@@ -36,11 +37,24 @@ public class Commander {
 			handCard = new Deck();
 			equipCard = new Deck();
 			seatNum = seat;
+			break;
 		}
 	}
 	
 	public void getCard(Card c) {
 		handCard.push(c);
 	}
-
+	public void useCard() {
+		System.out.println(masterName.toString() + " is using card.");
+	}
+	public boolean endUse() {
+		while(handCard.tmpNum>tmpBlood){
+			handCard.pop();
+		}
+		System.out.println(masterName.toString() + " end.");
+		return true;
+	}
+	public void receiveKill() {
+		
+	}
 }
