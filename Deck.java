@@ -8,8 +8,8 @@ public class Deck {
 	public int tmpNum = 0;
 	
 	public void shuffleAll() {
-		for(int i = 0; i < TOTAL_CARD_NUM; i++) {
-			push(new Card((int)(13*Math.random()), (int)(3*Math.random())));
+		 for(int i = 0; i < TOTAL_CARD_NUM; i++) {
+			push(new Card((int)(13*Math.random()), (int)(6*Math.random()), (int)(4*Math.random())));
 		}
 		Collections.shuffle(cont);
 	}
@@ -24,6 +24,12 @@ public class Deck {
 		if(i < 0 || i >= tmpNum)return null;
 		else return cont.get(i);
 	}
+	public Card pop(int idx) {
+		if(idx < 0 || idx >= tmpNum)return null;
+		Card rt = cont.remove(idx);
+		tmpNum--;
+		return rt;
+	}
 	public Card pop() {
 		Card rt = cont.remove(--tmpNum);
 		if(tmpNum==0)shuffleAll();
@@ -32,5 +38,11 @@ public class Deck {
 	public void push(Card c) {
 		tmpNum++;
 		cont.add(c);
+	}
+	public boolean have(int c) {
+		for(int i = 0; i < tmpNum; i++) {
+			if(cont.get(i).getIdx()==c)return true;
+		}
+		return false;
 	}
 }

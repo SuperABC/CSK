@@ -1,10 +1,10 @@
 public class Card {
-	enum Type {
+	public enum Type {
 		CT_ORDINARY,
 		CT_FUNC,
 		CT_EQUIPMENT
 	}
-	enum Content {
+	public enum Content {
 		CC_PREVENT,//别学了(杀)
 		CC_DENY,//没学(闪)
 		CC_STUDY,//学习(桃)
@@ -21,26 +21,57 @@ public class Card {
 		CC_DOWNLOAD,//下载资料(无中生有)
 		CC_HACK,//黑客入侵(过河拆桥)
 		CC_EXAMLEAK,//考试漏题(五谷丰登)
-		CC_NOPROBLEM,//无懈可击(无懈可击)
+		CC_NOPROBLEM,//滚(无懈可击)
 		CC_FUCK,//盗号约炮(借刀杀人)
 		CC_REEXAM,//重考(桃园结义)
+		CC_REF,//小抄(新加锦囊)
+	}
+	public enum Color {
+		CC_HEART,
+		CC_SQUARE,
+		CC_SPADE,
+		CC_CLUB
 	}
 	
 	private Type type;
 	private int number;
 	private Content cont;
+	private Color color;
 	
-	public Card(int n, int c) {
+	public Card(int n, int cont, int color) {
 		number = n;
-		switch(c) {
+		switch(color){
 		case 0:
-			cont = Content.CC_PREVENT;
+			this.color = Color.CC_HEART;
 			break;
 		case 1:
-			cont = Content.CC_DENY;
+			this.color = Color.CC_SQUARE;
 			break;
 		case 2:
-			cont = Content.CC_STUDY;
+			this.color = Color.CC_SPADE;
+			break;
+		case 3:
+			this.color = Color.CC_CLUB;
+			break;
+		}
+		switch(cont) {
+		case 0:
+			this.cont = Content.CC_PREVENT;
+			break;
+		case 1:
+			this.cont = Content.CC_DENY;
+			break;
+		case 2:
+			this.cont = Content.CC_STUDY;
+			break;
+		case 3:
+			this.cont = Content.CC_STAYUP;
+			break;
+		case 4:
+			this.cont = Content.CC_NONET;
+			break;
+		case 5:
+			this.cont = Content.CC_WEAKSHOW;
 			break;
 		}
 	}
@@ -59,6 +90,19 @@ public class Card {
 	}
 	public int getNum() {
 		return number;
+	}
+	public String getColor() {
+		switch(color){
+		case CC_HEART:
+			return "红桃";
+		case CC_SQUARE:
+			return "方片";
+		case CC_SPADE:
+			return "黑桃";
+		case CC_CLUB:
+			return "梅花";
+		}
+		return null;
 	}
 	public String getCont() {
 		switch(cont) {
@@ -103,5 +147,8 @@ public class Card {
 		default:
 			return null;
 		}
+	}
+	public int getIdx(){
+		return cont.ordinal();
 	}
 }
