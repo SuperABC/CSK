@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class Deck {
-	static final int TOTAL_CARD_NUM = 104;
+	static final int TOTAL_CARD_NUM = 113;
 	
 	public ArrayList<Card> cont = new ArrayList<Card>();
 	public int tmpNum = 0;
@@ -191,6 +191,7 @@ public class Deck {
 	}
 	public boolean have(Card.Content c) {
 		for(int i = 0; i < tmpNum; i++) {
+			if(cont.get(i)==null)continue;
 			if(cont.get(i).getIdx()==c)return true;
 		}
 		return false;
