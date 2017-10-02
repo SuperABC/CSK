@@ -1,6 +1,8 @@
 package Frame;
 
 import java.util.Scanner;
+
+import Frame.Commander.Effect;
 import Killer.GTX;
 import Killer.ZRS;
 
@@ -9,10 +11,18 @@ public class Table {
 	public static int num = 2;
 	public static Deck newDeck = new Deck();
 	public static Deck exDeck = new Deck();
+	private static int state = 0;
 	
+	public static Deck real = new Deck();
 	public static Card action = null;
+	public static int pro = -1;
 	public static int obj = -1;
 	public static int con = -1;
+	public static int chk = -1;
+	public static Effect kill = Commander.Effect.CE_NOEFFECT;
+	public static Effect review = Commander.Effect.CE_NOEFFECT;
+	
+	public static boolean judge = true, get = true, use = true, dispose = true;
 	public static int dying = -1;
 	
 	public static int tmpPlayer = 0;
@@ -60,30 +70,50 @@ public class Table {
 		}
 		
 		while(notEnd()) {
-			Deck j = player[tmpPlayer].exeJudge();
+			state = 0;
+			player[tmpPlayer].startTurn();
+			
+			state = 1;
+			Deck j = new Deck();
+			if(judge)
+				j = player[tmpPlayer].exeJudge();
 			if(j.have(Card.Content.CC_CALLROLL)) {
 				player[tmpPlayer].lessBlood(3);
 			}
 			askSave();
-			if(!j.have(Card.Content.CC_NONET)) {
-				player[tmpPlayer].getCard(newDeck.pop());
-				player[tmpPlayer].getCard(newDeck.pop());
-			}
 			if(j.have(Card.Content.CC_REF)) {
 				player[tmpPlayer].getCard(newDeck.pop());
 				player[tmpPlayer].getCard(newDeck.pop());
 			}
-			if(!j.have(Card.Content.CC_NIGHTPLAY)){
+			if(j.have(Card.Content.CC_NONET)) {
+				get = false;
+			}
+			if(j.have(Card.Content.CC_NIGHTPLAY)) {
+				use = false;
+			}
+			if(get == true) {
+				player[tmpPlayer].getCard(newDeck.pop());
+				player[tmpPlayer].getCard(newDeck.pop());
+			}
+			else get = true;
+			
+			state = 2;
+			if(use == true){
 				while(true) {
 					 player[tmpPlayer].useCard();
 					 exeAction();
-					 if(player[tmpPlayer].endUse())break;
+					 if(player[tmpPlayer].endTmp == true)break;
 				}
 			}
 			else {
+				use = true;
 				player[tmpPlayer].endTmp = true;
-				player[tmpPlayer].endUse();
 			}
+			
+			state = 3;
+			player[tmpPlayer].endUse();
+			
+			state = 4;
 			do {
 				tmpPlayer = (tmpPlayer+1)%2;
 			}while(player[tmpPlayer]==null);
@@ -97,36 +127,70 @@ public class Table {
 		if(playerLeft>1)return true;
 		else return false;
 	}
-	static void exeAction() {
-		int n, idx, fuck;
+ 	static void exeAction() {
+		int n, idx;
 		if(action == null)return;
+		
+		pro = tmpPlayer;
+		if(obj != -1)
+			player[obj].beObj();
+		if(con != -1)
+			player[con].beObj();
+		if(chk != -1)
+			player[con].beObj();
+		
 		switch(action.getIdx()) {
 		case CC_PREVENT:
-			player[obj].receiveKillFrom(player[tmpPlayer].masterName);
+			if(obj==-1)break;
+			if(!player[obj].receiveKillFrom(kill)) {
+				if(player[tmpPlayer].failKill())
+					exeAction();
+			}
+			else {
+				player[tmpPlayer].succeedKill(obj);
+			}
+			kill = Commander.Effect.CE_NOEFFECT;
+			player[tmpPlayer].moreKill();
+			if(con!=-1) {
+				if(!player[con].receiveKillFrom(kill)) {
+					if(player[tmpPlayer].failKill())
+						exeAction();
+				}
+				else {
+					player[tmpPlayer].succeedKill(con);
+				}
+			}
+			kill = Commander.Effect.CE_NOEFFECT;
+			player[tmpPlayer].moreKill();
+			if(chk!=-1) {
+				if(!player[chk].receiveKillFrom(kill)) {
+					if(player[tmpPlayer].failKill())
+						exeAction();
+				}
+				else {
+					player[tmpPlayer].succeedKill(chk);
+				}
+			}
 			break;
 		case CC_NONET:
+			if(obj==-1)break;
 			player[obj].receiveJudge(action);
 			break;
 		case CC_WEAKSHOW:
-			for(fuck= 0; fuck < num; fuck++){
-				if(player[fuck] != null)
-					if(player[fuck].askProblem())break;
-			}
-			if(fuck<num)break;
+			if(obj==-1)break;
+			if(askProblem())break;
 			player[obj].showCard();
 			if(player[tmpPlayer].weakThrow()) {
 				player[obj].lessBlood();
 			}
 			break;
 		case CC_NIGHTPLAY:
+			if(obj==-1)break;
 			player[obj].receiveJudge(action);
 			break;
 		case CC_WORSHIP:
-			for(fuck= 0; fuck < num; fuck++){
-				if(player[fuck] != null)
-					if(player[fuck].askProblem())break;
-			}
-			if(fuck<num)break;
+			if(obj==-1)break;
+			if(askProblem())break;
 			while(true){
 				if(player[obj].needKill()==false)break;
 				if(player[tmpPlayer].needKill()==false)break;
@@ -136,31 +200,25 @@ public class Table {
 			for(int i = 0; i < num; i++){
 				if(player[i]==null)continue;
 				if(i==tmpPlayer)continue;
-				for(fuck= 0; fuck < num; fuck++){
-					if(player[fuck] != null)
-						if(player[fuck].askProblem())break;
-				}
-				if(fuck<num)continue;
+				player[i].beObj();
+				if(askProblem())continue;
 				player[i].needKill();
+				player[i].endObj();
 			}
+			break;
 		case CC_TOREVIEW:
 			for(int i = 0; i < num; i++){
 				if(player[i]==null)continue;
 				if(i==tmpPlayer)continue;
-				for(fuck= 0; fuck < num; fuck++){
-					if(player[fuck] != null)
-						if(player[fuck].askProblem())break;
-				}
-				if(fuck<num)continue;
-				player[i].receiveKill();
+				player[i].beObj();
+				if(askProblem())continue;
+				player[i].receiveKillFrom(review);
+				player[i].endObj();
 			}
 			break;
 		case CC_COPY:
-			for(fuck= 0; fuck < num; fuck++){
-				if(player[fuck] != null)
-					if(player[fuck].askProblem())break;
-			}
-			if(fuck<num)break;
+			if(obj==-1)break;
+			if(askProblem())break;
 			n = player[obj].cardNum();
 			idx = player[tmpPlayer].copyCode(n);
 			player[tmpPlayer].handCard.push(player[obj].handCard.pop(idx));
@@ -170,37 +228,28 @@ public class Table {
 			break;
 		case CC_STEAM:
 			if(obj!=-1) {
-				for(fuck= 0; fuck < num; fuck++){
-					if(player[fuck] != null)
-						if(player[fuck].askProblem())break;
-				}
-				if(fuck==num)
+				player[obj].beObj();
+				if(!askProblem()) {
 					player[obj].changeSteam();
+					player[obj].endObj();
+				}
 			}
 			if(con!=-1) {
-				for(fuck= 0; fuck < num; fuck++){
-					if(player[fuck] != null)
-						if(player[fuck].askProblem())break;
+				player[con].beObj();
+				if(!askProblem()) {
+					player[con].changeSteam();
+					player[con].endObj();
 				}
-				if(fuck==num)
-					player[obj].changeSteam();
 			}
 			break;
 		case CC_DOWNLOAD:
-			for(fuck= 0; fuck < num; fuck++){
-				if(player[fuck] != null)
-					if(player[fuck].askProblem())break;
-			}
-			if(fuck<num)break;
+			if(askProblem())break;
 			player[tmpPlayer].handCard.push(Table.newDeck.pop());
 			player[tmpPlayer].handCard.push(Table.newDeck.pop());
 			break;
 		case CC_HACK:
-			for(fuck= 0; fuck < num; fuck++){
-				if(player[fuck] != null)
-					if(player[fuck].askProblem())break;
-			}
-			if(fuck<num)break;
+			if(obj==-1)break;
+			if(askProblem())break;
 			n = player[obj].cardNum();
 			idx = player[tmpPlayer].copyCode(n);
 			player[obj].handCard.pop(idx);
@@ -214,37 +263,102 @@ public class Table {
 				d.push(newDeck.pop());
 			for(int i = 0; i < num; i++) {
 				if(player[i] != null) {
-					for(fuck= 0; fuck < num; fuck++) {
-						if(player[fuck] != null)
-							if(player[fuck].askProblem())break;
-					}
-					if(fuck<num)continue;
+					player[i].beObj();
+					if(askProblem())continue;
 					player[i].getCard(d.pop(player[i].examLeak(d)));
+					player[i].endObj();
 				}
 			}
 			break;
 		case CC_REEXAM:
 			for(int i = 0; i < num; i++) {
 				if(player[i] != null) {
-					for(fuck= 0; fuck < num; fuck++){
-						if(player[fuck] != null)
-							if(player[fuck].askProblem())break;
-					}
-					if(fuck<num)continue;
+					player[i].beObj();
+					if(askProblem())continue;
 					player[i].moreBlood();
+					player[i].endObj();
 				}
 			}
 			break;
 		case CC_REF:
 			player[obj].receiveJudge(action);
 			break;
+		case CC_FUCK:
+			if(askProblem())break;
+
+			if(player[obj].beFucked()) {
+				pro = obj;
+				player[con].receiveKillFrom(kill);
+			}
+			else {
+				player[tmpPlayer].getCard(player[obj].equipCard.getCard(0));
+				player[obj].equipCard.cont.set(0, null);
+			}
 		default:
 			break;
 		}
 		askSave();
+
+		if(obj != -1)
+			player[obj].endObj();
+		if(con != -1)
+			player[con].endObj();
+		
+		kill = Commander.Effect.CE_NOEFFECT;
+		review = Commander.Effect.CE_NOEFFECT;
+		real = new Deck();
 		action = null;
 		obj = -1;
+		con = -1;
+		chk = -1;
 	}
+	static Card exeJudge() {
+		Card rt, tmp;
+		System.out.println("判定结果为：" + (rt = newDeck.pop()));
+		for(int i = 0; i < num; i++) {
+			if(player[(tmpPlayer + i)%8]!=null) {
+				if((tmp = player[i].changeJudge())!=null) {
+					rt = tmp;
+				}
+			}
+		}
+		return rt;
+	}
+ 	static int calDist(int pro, int obj) {
+		int dist = 0;
+		int left = pro, right = pro;
+		while(left!=obj && right!=obj) {
+			while(player[left = (left+num-1)%num]==null);
+			while(player[right = (right+1)%num]==null);
+			dist++;
+		}
+		if(player[obj].equipCard.cont.get(3)!=null)dist++;
+		if(player[pro].equipCard.cont.get(2)!=null)dist--;
+		return dist;
+	}
+ 	static int killDist(Card c) {
+ 		if(c==null)return 1;
+		switch(c.getIdx()){
+		case CC_SCRIPT:
+			return 1;
+		case CC_XILINX:
+			return 2;
+		case CC_SPINPEN:
+			return 3;
+		case CC_PTA:
+			return 3;
+		case CC_CHICKEN:
+			return 4;
+		case CC_CLOTHES:
+			return 2;
+		case CC_LINUX:
+			return 2;
+		case CC_GUARD:
+			return 5;
+		default:
+			return 1;
+		}
+ 	}
 	static void askSave() {
 		if(dying==-1)return;
 		else {
@@ -261,7 +375,16 @@ public class Table {
 			dying = -1;
 		}
 	} 
-	public void dieOne(int seat) {
+	static boolean askProblem() {
+		int fuck;
+		for(fuck= 0; fuck < num; fuck++){
+			if(player[(tmpPlayer + fuck)%num] != null)
+				if(player[(tmpPlayer + fuck)%num].askProblem())break;
+		}
+		if(fuck<num)return !askProblem();
+		else return false;
+	}
+	static void dieOne(int seat) {
 		if(player[seat] != null)player[seat] = null;
 	}
 }
