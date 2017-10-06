@@ -67,6 +67,7 @@ public class GTX extends Commander {
  		if(oneCard) {
  			getCard(Table.newDeck.pop());
  	 		System.out.println("神的世界，你们不会理解。");
+ 	 		oneCard = false;
  		}
  	}
  	public void dieAnyway() {

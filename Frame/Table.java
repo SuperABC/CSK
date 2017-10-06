@@ -118,6 +118,7 @@ public class Table {
 				tmpPlayer = (tmpPlayer+1)%2;
 			}while(player[tmpPlayer]==null);
 		}
+		System.out.println("Game over, the winner is No." + tmpPlayer);
 	}
 	static boolean notEnd() {
 		int playerLeft = 0;
@@ -221,7 +222,7 @@ public class Table {
 			if(askProblem())break;
 			n = player[obj].cardNum();
 			idx = player[tmpPlayer].copyCode(n);
-			player[tmpPlayer].handCard.push(player[obj].handCard.pop(idx));
+			player[tmpPlayer].handCard.push(player[obj].lostCard(idx));
 			break;
 		case CC_CALLROLL:
 			player[tmpPlayer].receiveJudge(action);
@@ -252,7 +253,7 @@ public class Table {
 			if(askProblem())break;
 			n = player[obj].cardNum();
 			idx = player[tmpPlayer].copyCode(n);
-			player[obj].handCard.pop(idx);
+			player[obj].lostCard(idx);
 			break;
 		case CC_EXAMLEAK:
 			n = 0;
@@ -371,6 +372,7 @@ public class Table {
 			}
 			if(i==num) {
 				player[dying].dieAnyway();
+				player[dying] = null;
 			}
 			dying = -1;
 		}

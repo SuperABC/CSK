@@ -150,8 +150,6 @@ public class Deck {
 
 		push(new Card(7,31,0));
 
-		push(new Card(8,32,1));
-
 		push(new Card(5,33,0));
 
 		push(new Card(13,34,2));

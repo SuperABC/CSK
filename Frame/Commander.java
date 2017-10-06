@@ -88,9 +88,19 @@ public class Commander {
  		Deck rt = new Deck();
  		for(int i = 0; i < judgeCard.tmpNum; i++){
  			System.out.println("判定" + judgeCard.cont.get(i).getCont() + ":");
- 			if(Table.askProblem())continue;
- 			Card j = Table.newDeck.pop();
- 			System.out.println("结果为: " + j.getColor() + j.getNum() + j.getCont());
+ 			if(Table.askProblem()) {
+ 				if(judgeCard.cont.get(i).getIdx() == Card.Content.CC_CALLROLL) {
+ 					for(int k = 1; k <= Table.num; k++) {
+ 						if(Table.player[(seatNum + k)%Table.num]==null ||
+ 							Table.player[(seatNum + k)%Table.num].judgeCard.have(Card.Content.CC_CALLROLL))continue;
+ 						Table.player[(seatNum + k)%Table.num].receiveJudge(judgeCard.cont.get(i));
+ 					}
+ 				}
+ 				continue;
+ 			}
+ 			
+ 			Card j = Table.exeJudge();
+ 			
  			switch(judgeCard.cont.get(i).getIdx()){
  			case CC_NONET:
  				if(j.getColor()!="梅花") {
@@ -114,8 +124,14 @@ public class Commander {
  				if(j.getColor()=="黑桃" && j.getNum() >= 2 &&j.getNum() <= 9) {
  					rt.push(judgeCard.cont.get(i));
  	 				System.out.println("点名啦！");
+ 	 				lessBlood(3);
  				}
  				else {
+ 					for(int k = 1; k <= Table.num; k++) {
+ 						if(Table.player[(seatNum + k)%Table.num]==null ||
+ 							Table.player[(seatNum + k)%Table.num].judgeCard.have(Card.Content.CC_CALLROLL))continue;
+ 						Table.player[(seatNum + k)%Table.num].receiveJudge(judgeCard.cont.get(i));
+ 					}
  					System.out.println("今日无事！");
  				}
  				
@@ -329,6 +345,12 @@ public class Commander {
 			moreBlood();
 			System.out.println(masterName.toString() + "失恋了，绩点提高，为" + tmpBlood);
 		}
+		if(idx==1&&equipCard.cont.get(1)!=null &&equipCard.cont.get(1).getIdx() == Card.Content.CC_GLASSES) {
+			if(tmpBlood==0) {
+				System.out.println(masterName.toString() + "失去了黑框眼镜，续不动了。");
+				Table.dying = seatNum;
+			}
+		}
 		Card rt = equipCard.cont.get(idx);
 		equipCard.cont.set(0, null);
 		return rt;
@@ -337,7 +359,9 @@ public class Commander {
 		if(equipCard.have(Card.Content.CC_PTA)) {
 			System.out.println("是否登录PTA?");
 			int a = chooseOne();
+			if(a==-1)return false;
 			int b = chooseOne();
+			if(b==-1)return false;
 			handCard.pop(a);
 			handCard.pop(b);
 			Table.action = new Card(0, 0, 0);
@@ -383,7 +407,8 @@ public class Commander {
 		switch(Table.action.getIdx()) {
 		case CC_PREVENT:
 			System.out.println("" + Table.pro + "号位:" + masterName.toString() + " 别学了！");
-			if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_KEYBOARD) {
+			if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_KEYBOARD &&
+					!(Table.player[Table.pro].equipCard.have(Card.Content.CC_XILINX))) {
 				System.out.println("是否使用红轴键盘？");
 				if(s.nextInt()!=-1) {
 					Card j = Table.exeJudge();
@@ -402,7 +427,8 @@ public class Commander {
 			break;
 		case CC_TOREVIEW:
 			System.out.println("" + Table.pro + "号位: " + masterName.toString() + "一起自习去！");
-			if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_KEYBOARD) {
+			if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_KEYBOARD &&
+					!(Table.player[Table.pro].equipCard.have(Card.Content.CC_XILINX))) {
 				System.out.println("是否使用红轴键盘？");
 				if(s.nextInt()!=-1) {
 					Card j = Table.exeJudge();
@@ -427,7 +453,8 @@ public class Commander {
 	public boolean receiveKillFrom(Effect e) {
 		int c;
 		Scanner s = new Scanner(System.in);
-		if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_GTX) {
+		if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_GTX &&
+			!(Table.player[Table.pro].equipCard.have(Card.Content.CC_XILINX))) {
 			if(Table.action.getColor()=="黑桃" || Table.action.getColor()=="梅花")
 				return false;
 		}
@@ -456,7 +483,8 @@ public class Commander {
 			default:
 				break;
 			}
-			if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_KEYBOARD) {
+			if(equipCard.cont.get(1) != null && equipCard.cont.get(1).getIdx()==Card.Content.CC_KEYBOARD &&
+					!(Table.player[Table.pro].equipCard.have(Card.Content.CC_XILINX))) {
 				System.out.println("是否使用红轴键盘？");
 				if(s.nextInt()!=-1) {
 					Card j = Table.exeJudge();
@@ -479,6 +507,9 @@ public class Commander {
 				handCard.pop(c);
 			}
 			break;
+		case CE_NODENY:
+			lessBlood();
+			return true;
 		default:
 			return receiveKill();
 		}
@@ -568,7 +599,7 @@ public class Commander {
 	public boolean beFucked() {
 		System.out.println(Table.player[Table.pro].masterName + " wang to fuck you.");
 		int c = chooseOne();
-		if(handCard.cont.get(c).getIdx() == Card.Content.CC_PREVENT) {
+		if(c!=-1 && handCard.cont.get(c).getIdx() == Card.Content.CC_PREVENT) {
 			handCard.pop(c);
 			return true;
 		}
@@ -616,7 +647,14 @@ public class Commander {
 		return tmpBlood;
 	}
 	public int lessBlood(int n) {
-		tmpBlood-=n;
+		if(equipCard.cont.get(1)!=null &&equipCard.cont.get(1).getIdx() == Card.Content.CC_DBELEPHANT &&
+				!(Table.player[Table.pro].equipCard.have(Card.Content.CC_XILINX))) {
+			tmpBlood-=1;
+			System.out.println(masterName.toString() + "得到了对象的安慰，损失降为1，目前绩点为" + tmpBlood);
+		}
+		else {
+			tmpBlood-=n;
+		}
 		System.out.println(masterName.toString() + " is hurt.");
 		System.out.println("Now " + tmpBlood + " left.");
 		if(tmpBlood <= 0)Table.dying = seatNum;
@@ -859,6 +897,11 @@ public class Commander {
 		Table.action = handCard.cont.get(c);
 		o = s.nextInt();
 		Table.obj = o;
+		if(Table.player[o].equipCard.cont.get(0)==null) {
+			System.out.println("他没工具，你约炮也没用。");
+			Table.action = null;
+			return;
+		}
 		o = s.nextInt();
 		Table.con= o;
 		System.out.println(masterName.toString() + ":");

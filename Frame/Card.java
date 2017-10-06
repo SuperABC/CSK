@@ -300,4 +300,7 @@ public class Card {
 	public Content getIdx() {
 		return cont;
 	}
+	public String toString() {
+		return getColor() + number + getCont();
+	}
 }
