@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/surf">
+
+    <ImageView
+        android:layout_width="93dp"
+        android:layout_height="150dp"
+        android:id="@+id/cont"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"/>
+    <ImageView
+        android:layout_width="93dp"
+        android:layout_height="150dp"
+        android:id="@+id/color"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"/>
+    <ImageView
+        android:layout_width="93dp"
+        android:layout_height="150dp"
+        android:id="@+id/num"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"/>
+</RelativeLayout>
