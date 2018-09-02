@@ -1,0 +1,4 @@
+﻿  killer.cpp
+e:\项目\github\csk\console\csk\csk\killer.cpp(25): warning C4244: “=”: 从“float”转换到“int”，可能丢失数据
+e:\项目\github\csk\console\csk\csk\killer.cpp(44): warning C4244: “=”: 从“float”转换到“int”，可能丢失数据
+  CSK.vcxproj -> E:\项目\Github\CSK\console\CSK\Debug\CSK.exe
