@@ -220,6 +220,7 @@ void Killer::exeUse() {
 			case CC_STUDY:
 				if (health < full) {
 					incomeGrade();
+					manager->dropCard(handCards.cont[i]);
 					handCards.cont[i] = handCards.cont.back();
 					handCards.cont.pop_back();
 
