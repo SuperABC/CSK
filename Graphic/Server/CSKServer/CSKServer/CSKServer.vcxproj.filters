@@ -13,10 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\prepare">
+      <UniqueIdentifier>{9737c03f-7361-4cf6-9992-bc592b3ba4cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\game">
+      <UniqueIdentifier>{0173da24-ac69-48e1-9b04-013cec0f560e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="main.h">
+      <Filter>头文件\prepare</Filter>
+    </ClInclude>
+    <ClInclude Include="room.h">
+      <Filter>头文件\prepare</Filter>
+    </ClInclude>
+    <ClInclude Include="user.h">
+      <Filter>头文件\prepare</Filter>
+    </ClInclude>
+    <ClInclude Include="killer.h">
+      <Filter>头文件\game</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
