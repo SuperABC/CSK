@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-void tableInit(int roomId);
+void chooseKiller(int roomId);
 
 template<typename T>
 void shuffleVector(std::vector<T> &v) {

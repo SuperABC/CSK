@@ -19,34 +19,43 @@ void mainHandler(char *str, SOCKET socket) {
 	if (inst == "login") {
 		std::string name = msg.substr(msg.find(' ') + 1);
 
-		char idStr[8];
+		struct JSON *json = createJson();
 		for (auto u : userList) {
 			if (u->name == name) {
-				_itoa(u->userId, idStr, 10);
-				socketSend(socket, idStr);
+				setStringContent(json, "inst", (char *)"relogin success");
+				setIntContent(json, "id", u->userId);
+				setIntContent(json, "status", u->status);
+				socketSend(socket, writeJson(json));
 				u->socket = socket;
+				freeJson(json);
 				return;
 			}
 		}
-		_itoa(userMax, idStr, 10);
-		socketSend(socket, idStr);
+		setStringContent(json, "inst", (char *)"login success");
+		setIntContent(json, "id", userMax);
+		setIntContent(json, "status", US_LOGIN);
+		socketSend(socket, writeJson(json));
 		userList.push_back(new User(msg.substr(msg.find(' ') + 1), socket, userMax++));
+		freeJson(json);
 	}
 	else if (inst == "room") {
-		char idStr[8];
 		int id = atoi(msg.substr(msg.find(' ') + 1).data());
+
+		struct JSON *json = createJson();
 		for (auto r : roomList) {
 			if (r->waiting()) {
-				_itoa(r->roomId, idStr, 10);
-				socketSend(socket, idStr);
+				setStringContent(json, "inst", (char *)"room success");
+				setIntContent(json, "id", r->roomId);
+				socketSend(socket, writeJson(json));
 				r->comein(userList[id]);
 				break;
 			}
 		}
 		if (userList[id]->status == US_LOGIN) {
 			Room *r = new Room(roomMax++);
-			_itoa(r->roomId, idStr, 10);
-			socketSend(socket, idStr);
+			setStringContent(json, "inst", (char *)"room success");
+			setIntContent(json, "id", r->roomId);
+			socketSend(socket, writeJson(json));
 			r->comein(userList[id]);
 			roomList.push_back(r);
 		}
@@ -62,8 +71,10 @@ void singleMsg() {
 	closeSocket(tmp);
 }
 void socketResponse() {
+	bool nodelay = true;
 	while (1) {
 		connection = acceptOne(server);
+		setsockopt(connection, SOL_SOCKET, TCP_NODELAY, (const char *)&nodelay, sizeof(bool));
 		createThread(singleMsg);
 	}
 }
@@ -88,6 +99,12 @@ int main() {
 					break;
 				case US_ROOM:
 					std::cout << u->roomId << "号房间";
+					break;
+				case US_WAITING:
+					std::cout << "等待中";
+					break;
+				case US_KILLER:
+					std::cout << "选择学生中";
 					break;
 				case US_PLAYING:
 					std::cout << "游戏中";
@@ -119,7 +136,7 @@ int main() {
 	}
 }
 
-void tableInit(int roomId) {
+void chooseKiller(int roomId) {
 	std::cout << roomId << "号房间开始游戏，人数" << roomList[roomId]->users.size() << std::endl;
 
 	std::vector<KILLER> killerSet;

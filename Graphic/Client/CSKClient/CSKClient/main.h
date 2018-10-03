@@ -1,6 +1,7 @@
 #pragma once
 
 enum PROCSTATUS {
+	PS_START,
 	PS_ENTERING,
 	PS_WAITING,
 	PS_KILLER,

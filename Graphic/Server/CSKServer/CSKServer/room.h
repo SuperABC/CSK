@@ -25,7 +25,7 @@ public:
 
 		if (users.size() == 2) {
 			status = RS_PLAYING;
-			tableInit(roomId);
+			chooseKiller(roomId);
 		}
 	}
 };
