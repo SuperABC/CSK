@@ -1,20 +1,52 @@
 #include "winsgl.h"
+#include <vector>
+SGL_CONSOLE_FRAME
 
-SOCKET server;
+SOCKET server, connection;
 
-void layoutWidgets() {
-	easyWidget(SG_LABEL, "address", 40, 40, 0, 0, "·þÎñÆ÷¶Ë¿Ú£º4497", NULL);
-	easyWidget(SG_OUTPUT, "connection", 40, 80, 560, 360, "", NULL);
+std::vector<int> loginList;
+int loginMax = 0;
+
+void mainHandler(char *str, SOCKET socket) {
+	char idStr[8];
+	if (std::string(str) == "login") {
+		itoa(loginMax, idStr, 10);
+		socketSend(socket, idStr);
+		loginList.push_back(loginMax);
+		loginMax++;
+	}
 }
+void singleMsg() {
+	SOCKET tmp = connection;
+	char buf[64] = { 0 };
 
-void sgSetup() {
-	initWindow(640, 480, "CSK Server", BIT_MAP);
+	while (socketReceive(tmp, buf, 64) != SG_CONNECTION_FAILED) {
+		mainHandler(buf, tmp);
+	}
+	closeSocket(tmp);
+}
+void socketResponse() {
+	while (1) {
+		connection = acceptOne(server);
+		createThread(singleMsg);
+	}
+}
+int main() {
+	std::string buf;
+
 	server = createServer(4497);
+	createThread(socketResponse);
+	std::cout << "CSK Server is on." << std::endl;
 
-	layoutWidgets();
-}
-void sgLoop() {
-	static int i = 0;
-	debugf("%d\n", i++);
-	return;
+	while (1) {
+		std::getline(std::cin, buf);
+		if (buf == "status") {
+			std::cout << "CSK Server is running." << std::endl;
+		}
+		if (buf == "users") {
+			for (auto i : loginList)
+				std::cout << i << " ";
+			std::cout << std::endl;
+		}
+	}
 }
