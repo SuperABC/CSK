@@ -143,10 +143,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="card.cpp" />
+    <ClCompile Include="ground.cpp" />
+    <ClCompile Include="killer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="manager.cpp" />
+    <ClCompile Include="poker.cpp" />
+    <ClCompile Include="skill.cpp" />
+    <ClCompile Include="table.cpp" />
+    <ClCompile Include="cs.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="card.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="killer.h" />
+    <ClInclude Include="manager.h" />
+    <ClInclude Include="poker.h" />
+    <ClInclude Include="skill.h" />
+    <ClInclude Include="cs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

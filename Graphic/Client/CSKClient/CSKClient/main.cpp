@@ -1,40 +1,12 @@
-#include "winsgl.h"
 #include "main.h"
+#include "killer.h"
+#include <vector>
 
 SOCKET client;
-int userId, roomId;
 
 enum PROCSTATUS status;
+bool enTable = false;
 
-void login(widgetObj *w) {
-	widgetObj *input = getWidgetByName("input");
-
-	socketSend(client, (std::string("login ") + (char *)input->content).data());
-	status = PS_ENTERING;
-}
-
-void layoutWidget(int status) {
-	switch (status) {
-	case PS_START:
-		easyWidget(SG_INPUT, "input", 40, 40, 440, 24, "", NULL);
-		easyWidget(SG_BUTTON, "login", 520, 40, 80, 24, "登录", (mouseClickUser)login);
-		break;
-	case PS_ENTERING:
-		easyWidget(SG_LABEL, "waiting", 0, 0, 120, 20, "等待进入游戏...", NULL);
-		break;
-	}
-}
-void clearWidget(int status) {
-	switch (status) {
-	case PS_START:
-		if (getWidgetByName("input"))deleteWidgetByName("input");
-		if (getWidgetByName("login"))deleteWidgetByName("login");
-		break;
-	case PS_ENTERING:
-		if (getWidgetByName("waiting"))deleteWidgetByName("waiting");
-		break;
-	}
-}
 void msgRecv() {
 	char buffer[256] = { 0 };
 	char *buf = buffer;
@@ -43,19 +15,58 @@ void msgRecv() {
 		struct JSON_Item *item = getContent(json, "inst");
 		std::string inst = item ? item->data.json_string : "";
 		if (inst == "login success") {
-			userId = getContent(json, "id")->data.json_int;
-			socketSend(client, (std::string("room ") + std::to_string(userId)).data());
+			loginProcess(json);
 		}
 		else if (inst == "relogin success") {
-			userId = getContent(json, "id")->data.json_int;
+			reloginProcess(json);
 		}
 		else if (inst == "room success") {
-			roomId = getContent(json, "id")->data.json_int;
+			roomProcess(json);
 		}
 		else if (inst == "choose killer") {
-			status = PS_KILLER;
+			killerProcess(json);
+		}
+		else if (inst == "game init") {
+			gameInitProcess(json);
+		}
+		else if (inst == "card init") {
+			cardInitProcess(json);
 		}
 		freeJson(json);
+	}
+}
+
+void layoutWidget(int status) {
+	switch (status) {
+	case PS_START:
+		layoutStart();
+		break;
+	case PS_ENTERING:
+		layoutEntering();
+		break;
+	case PS_KILLER:
+		layoutKiller();
+		break;
+	case PS_GAMING:
+		layoutGaming();
+		enTable = true;
+		break;
+	}
+}
+void clearWidget(int status) {
+	switch (status) {
+	case PS_START:
+		clearStart();
+		break;
+	case PS_ENTERING:
+		clearEntering();
+		break;
+	case PS_KILLER:
+		clearKiller();
+		break;
+	case PS_GAMING:
+		clearGaming();
+		break;
 	}
 }
 
@@ -75,4 +86,5 @@ void sgLoop() {
 		pre = status;
 		layoutWidget(status);
 	}
+	if (status == PS_GAMING)tableLoop();
 }

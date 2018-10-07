@@ -1,6 +1,8 @@
 #pragma once
 #include "main.h"
 #include "user.h"
+#include "killer.h"
+#include "manager.h"
 #include <vector>
 
 enum ROOMSTATUS {
@@ -12,7 +14,9 @@ class Room {
 public:
 	ROOMSTATUS status;
 	int roomId;
-	std::vector<User *> users;
+	vector<Roommate *> users;
+
+	Manager *manager;
 
 	Room(int roomId) : status(RS_WAITING), roomId(roomId) {}
 	bool waiting() {
@@ -21,11 +25,23 @@ public:
 	void comein(User *user) {
 		user->status = US_ROOM;
 		user->roomId = roomId;
-		users.push_back(user);
+		users.push_back(new Roommate(user));
 
 		if (users.size() == 2) {
 			status = RS_PLAYING;
 			chooseKiller(roomId);
 		}
+	}
+	void assign(int id, enum KILLER killer) {
+		for (auto &m : users) {
+			if (m->userId == id) {
+				m->killer = killer;
+				break;
+			}
+		}
+		for (auto m : users) {
+			if (m->killer == NO_KILLER)return;
+		}
+		enterTable(roomId);
 	}
 };

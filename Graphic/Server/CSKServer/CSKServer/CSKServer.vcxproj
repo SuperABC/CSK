@@ -143,11 +143,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="card.cpp" />
+    <ClCompile Include="ground.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="table.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="card.h" />
     <ClInclude Include="killer.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="manager.h" />
     <ClInclude Include="room.h" />
     <ClInclude Include="user.h" />
   </ItemGroup>
