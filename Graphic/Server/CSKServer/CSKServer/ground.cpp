@@ -2,7 +2,6 @@
 #include "user.h"
 #include "room.h"
 #include "killer.h"
-#include "manager.h"
 
 using std::cout;
 using std::endl;
@@ -123,7 +122,9 @@ void enterTable(int roomId) {
 		}
 		setArrayContent(json, "cards", cardList);
 		socketSend(u->socket, writeJson(json));
-		freeJson(cardList);
+		deleteContent(json, "cards");
 	}
+	freeJson(json);
 
+	changeState(roomId);
 }

@@ -46,7 +46,7 @@ public:
 		}
 	}
 
-	vector<Killer *> getPlayer() { return players; }
+	int getPlayer() { return tmpPlayer; }
 	Card touchCard() {
 		Card ret = untouch.cont.back();
 		untouch.cont.pop_back();
@@ -75,6 +75,34 @@ public:
 
 		if (dist < 1)dist = 1;
 		return dist;
+	}
+	STEP nextState() {
+		switch (tmpStep) {
+		case CSK_INIT:
+			tmpPlayer = 0;
+			tmpStep = CSK_START;
+			break;
+		case CSK_START:
+			tmpStep = CSK_GET;
+			break;
+		case CSK_GET:
+			tmpStep = CSK_USE;
+			break;
+		case CSK_USE:
+			tmpStep = CSK_DROP;
+			break;
+		case CSK_DROP:
+			tmpStep = CSK_END;
+			break;
+		case CSK_END:
+			tmpStep = CSK_START;
+			tmpPlayer = (tmpPlayer + 1) % players.size();
+			break;
+		default:
+			break;
+		}
+
+		return tmpStep;
 	}
 
 };

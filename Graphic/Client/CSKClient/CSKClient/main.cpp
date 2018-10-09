@@ -32,6 +32,12 @@ void msgRecv() {
 		else if (inst == "card init") {
 			cardInitProcess(json);
 		}
+		else if (inst == "next state") {
+			nextStateProcess(json);
+		}
+		else if (inst == "get card") {
+			getCardProcess(json);
+		}
 		freeJson(json);
 	}
 }
@@ -76,6 +82,7 @@ void sgSetup() {
 	initMouse(SG_COORDINATE);
 
 	status = PS_START;
+	//client = createClient("47.106.223.165", 4497);
 	client = createClient("127.0.0.1", 4497);
 	createThread(msgRecv);
 }

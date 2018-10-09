@@ -16,6 +16,8 @@ void killerProcess(struct JSON *json);
 
 void gameInitProcess(struct JSON *json);
 void cardInitProcess(struct JSON *json);
+void getCardProcess(struct JSON *json);
+void nextStateProcess(struct JSON *json);
 
 void layoutStart();
 void clearStart();

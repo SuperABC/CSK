@@ -31,6 +31,7 @@ public:
 	vector<Killer *> getPlayer() { return players; }
 	int getPosition() { return playerPos; }
 	Killer *getSelf() { return players[playerPos]; }
+	bool myTurn() { return tmpPlayer == playerPos; }
 	int calDist(unsigned int i, unsigned int j) {
 		int live = 0, di = 0, dj = 0;
 		for (unsigned int k = 0; k < players.size(); k++) {
@@ -54,6 +55,34 @@ public:
 
 		if (dist < 1)dist = 1;
 		return dist;
+	}
+	STEP nextState() {
+		switch (tmpStep) {
+		case CSK_INIT:
+			tmpPlayer = 0;
+			tmpStep = CSK_START;
+			break;
+		case CSK_START:
+			tmpStep = CSK_GET;
+			break;
+		case CSK_GET:
+			tmpStep = CSK_USE;
+			break;
+		case CSK_USE:
+			tmpStep = CSK_DROP;
+			break;
+		case CSK_DROP:
+			tmpStep = CSK_END;
+			break;
+		case CSK_END:
+			tmpStep = CSK_START;
+			tmpPlayer = (tmpPlayer + 1) % players.size();
+			break;
+		default:
+			break;
+		}
+
+		return tmpStep;
 	}
 
 };

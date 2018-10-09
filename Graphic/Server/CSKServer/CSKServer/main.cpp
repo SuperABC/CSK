@@ -27,17 +27,22 @@ void mainHandler(char *str, SOCKET socket) {
 	}
 	else if (inst == "game") {
 		int roomId = getContent(json, "room")->data.json_int;
-		int playerPos = getContent(json, "position")->data.json_int;
-		gameProcess(str, roomId, playerPos);
+		if (getContent(json, "end")) {
+			changeState(roomId);
+		}
+		else {
+			int playerPos = getContent(json, "position")->data.json_int;
+			gameProcess(str, roomId, playerPos);
+		}
 	}
 
 	freeJson(json);
 }
 void singleMsg() {
 	SOCKET tmp = connection;
-	char buf[64] = { 0 };
+	char buf[256] = { 0 };
 
-	while (socketReceive(tmp, buf, 64) != SG_CONNECTION_FAILED) {
+	while (socketReceive(tmp, buf, 256) != SG_CONNECTION_FAILED) {
 		mainHandler(buf, tmp);
 	}
 	closeSocket(tmp);

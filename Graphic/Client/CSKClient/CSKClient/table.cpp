@@ -4,8 +4,13 @@
 #include "poker.h"
 #include "manager.h"
 
+extern SOCKET client;
+extern int userId, roomId;
+
 extern enum PROCSTATUS status;
+
 extern const char *killerName[];
+extern const char *killerDetail[];
 
 Manager *manager;
 
@@ -38,6 +43,49 @@ void cardInitProcess(struct JSON *json) {
 		
 		addPoker(Poker(c));
 	}
+}
+void getCardProcess(struct JSON *json) {
+	struct JSON *cards = getContent(json, "cards")->data.json_array;
+	int num = getContent(json, "num")->data.json_int;
+
+	for (int i = 0; i < num; i++) {
+		Card c;
+		struct JSON *card = getElement(cards, i)->data.json_object;
+		c.color = (Color)getContent(card, "color")->data.json_int;
+		c.num = getContent(card, "num")->data.json_int;
+		c.cont = (Content)getContent(card, "content")->data.json_int;
+
+		addPoker(Poker(c));
+	}
+
+	struct JSON *ret = createJson();
+	setStringContent(ret, "inst", (char *)"game");
+	setIntContent(ret, "room", roomId);
+	setStringContent(ret, "end", (char *)"");
+	socketSend(client, writeJson(ret));
+}
+void nextStateProcess(struct JSON *json) {
+	STEP step = manager->nextState();
+
+	if (!manager->myTurn())return;
+	struct JSON *ret = createJson();
+	switch (step) {
+	case CSK_START:
+	case CSK_USE:
+	case CSK_DROP:
+	case CSK_END:
+		setStringContent(ret, "inst", (char *)"game");
+		setIntContent(ret, "room", roomId);
+		setStringContent(ret, "end", (char *)"");
+		socketSend(client, writeJson(ret));
+		break;
+	case CSK_GET:
+		break;
+	default:
+		break;
+	}
+
+	debugf("%d", step);
 }
 
 void layoutGaming() {

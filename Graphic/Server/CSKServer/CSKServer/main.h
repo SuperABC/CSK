@@ -14,6 +14,7 @@ void gameProcess(char *recv, int room, int pos);
 
 void chooseKiller(int roomId);
 void enterTable(int roomId);
+void changeState(int roomId);
 
 template<typename T>
 void shuffleVector(vector<T> &v) {
