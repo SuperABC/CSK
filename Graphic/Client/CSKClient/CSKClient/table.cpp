@@ -13,8 +13,35 @@ extern const char *killerName[];
 extern const char *killerDetail[];
 
 Manager *manager;
+extern vector<Poker> pokerList;
 
 extern bool enTable;
+
+void dropCard(widgetObj *w) {
+	unsigned int max = manager->getSelf()->getHealth();
+
+	vector<int> list;
+	if (pokerList.size() > max) {
+		for (unsigned int i = 0; i < pokerList.size(); i++) {
+			if (pokerList[i].widget->hide == 0)max--;
+			else list.push_back(i);
+		}
+		if (max != 0)return;
+
+		removePoker(list);
+	}
+
+	struct JSON *ret = createJson();
+
+	setStringContent(ret, "inst", (char *)"game");
+	setIntContent(ret, "room", roomId);
+	setStringContent(ret, "end", (char *)"");
+	socketSend(client, writeJson(ret));
+
+	freeJson(ret);
+	setWidgetTop("drop");
+	deleteWidgetByName("drop");
+}
 
 void gameInitProcess(struct JSON *json) {
 	int num = getContent(json, "num")->data.json_int;
@@ -22,7 +49,7 @@ void gameInitProcess(struct JSON *json) {
 	vector<Killer *>list;
 	for (int i = 0; i < num; i++) {
 		struct JSON *obj = getElement(killers, i)->data.json_object;
-		Killer * k = new Killer((KILLER)getContent(obj, "killer")->data.json_int, i);
+		Killer * k = Killer::newKiller((KILLER)getContent(obj, "killer")->data.json_int, i);
 		k->setName(getContent(obj, "user")->data.json_string);
 		list.push_back(k);
 	}
@@ -63,6 +90,7 @@ void getCardProcess(struct JSON *json) {
 	setIntContent(ret, "room", roomId);
 	setStringContent(ret, "end", (char *)"");
 	socketSend(client, writeJson(ret));
+	freeJson(ret);
 }
 void nextStateProcess(struct JSON *json) {
 	STEP step = manager->nextState();
@@ -72,18 +100,20 @@ void nextStateProcess(struct JSON *json) {
 	switch (step) {
 	case CSK_START:
 	case CSK_USE:
-	case CSK_DROP:
 	case CSK_END:
 		setStringContent(ret, "inst", (char *)"game");
 		setIntContent(ret, "room", roomId);
 		setStringContent(ret, "end", (char *)"");
 		socketSend(client, writeJson(ret));
 		break;
+	case CSK_DROP:
+		easyWidget(SG_BUTTON, "drop", 400, 300, 80, 24, "ÆúÅÆ", (mouseClickUser)dropCard);
 	case CSK_GET:
 		break;
 	default:
 		break;
 	}
+	freeJson(ret);
 
 	debugf("%d", step);
 }

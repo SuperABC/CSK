@@ -36,7 +36,7 @@ public:
 	Manager(vector<Roommate *> p) {
 		int i = 0;
 		for (auto p : p) {
-			players.push_back(new Killer(p->killer, i++));
+			players.push_back(Killer::newKiller(p->killer, i++));
 		}
 		untouch = newDeck();
 	}

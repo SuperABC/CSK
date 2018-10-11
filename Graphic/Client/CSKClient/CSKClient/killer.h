@@ -61,6 +61,51 @@ enum ROLE {
 const char *killerName[];
 extern const char *killerDetail[];
 
+class CS_gtx;
+class CS_gs;
+class CS_czz;
+class CS_szl;
+class CS_zrs;
+class CS_zs;
+class CS_wyl;
+class CS_yzy;
+class CS_hwn;
+class CS_bs;
+class CS_hysb;
+
+class SE_tnl;
+class SE_wamy;
+class SE_mys;
+class SE_msl;
+class SE_ms;
+class SE_mwz;
+class SE_hhw;
+class SE_sd;
+class SE_yjc;
+class SE_cfc;
+
+class CKC_lwyd;
+class CKC_lwx;
+class CKC_zzh;
+class CKC_zs;
+class CKC_zcy;
+class CKC_zsb;
+class CKC_yty;
+class CKC_ljw;
+class CKC_swyd;
+class CKC_wzh;
+
+class OT_gy;
+class OT_smq;
+class OT_yxtr;
+class OT_zy;
+class OT_ys;
+class OT_zh;
+class OT_yx;
+class OT_lzl;
+class OT_sh;
+class OT_zjs;
+
 class Killer {
 protected:
 	KILLER killer;
@@ -84,11 +129,13 @@ public:
 	}
 	~Killer() {}
 
+	static Killer *newKiller(KILLER k, int p);
+
 	KILLER getKiller() { return killer; }
 	void setName(string name) { this->name = name; }
 	string getName() { return name; }
 	int getFull() { return full; }
-	int getHealthl() { return health; }
+	int getHealth() { return health; }
 
 	Deck getHandCards() {
 		return handCards;

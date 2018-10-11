@@ -80,11 +80,31 @@ void addPoker(Poker p) {
 	easyWidget(SG_OUTPUT, (string("poker") + std::to_string(p.id)).data(),
 		10 + pokerList.size() * 60, 320, 90, 120,
 		cardName(Card(p.num, p.cont, p.color)).data(), NULL);
-	widgetObj *poker = getWidgetByName((string("poker") + std::to_string(p.id)).data());
-	poker->value = p.cont;
-	poker->hide = 0;
-	poker->mouseIn = (mouseMoveCall)mouseMovePoker;
-	poker->mouseOut = (mouseMoveCall)mouseMovePoker;
-	poker->mouseUser = (mouseClickUser)mouseClickPoker;
+	p.widget = getWidgetByName((string("poker") + std::to_string(p.id)).data());
+	p.widget->value = p.cont;
+	p.widget->hide = 0;
+	p.widget->mouseIn = (mouseMoveCall)mouseMovePoker;
+	p.widget->mouseOut = (mouseMoveCall)mouseMovePoker;
+	p.widget->mouseUser = (mouseClickUser)mouseClickPoker;
 	pokerList.push_back(p);
+}
+void removePoker(vector<int> idxs) {
+	for (auto i : idxs) {
+		deleteWidgetByName(pokerList[i].widget->name);
+		pokerList[i].widget = NULL;
+	}
+	unsigned int i = 0;
+	while (i < pokerList.size()) {
+		if (pokerList[i].widget) {
+			moveWidgetByName(pokerList[i].widget->name, 10 + 60 * i - pokerList[i].widget->pos.x, 0);
+			setWidgetTop(pokerList[i].widget->name);
+			i++;
+		}
+		else {
+			for (unsigned int j = i + 1; j < pokerList.size(); j++) {
+				pokerList[j - 1] = pokerList[j];
+			}
+			pokerList.pop_back();
+		}
+	}
 }

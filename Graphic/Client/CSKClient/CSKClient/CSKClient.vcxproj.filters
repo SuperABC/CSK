@@ -66,6 +66,15 @@
     <ClCompile Include="poker.cpp">
       <Filter>源文件\game\basic</Filter>
     </ClCompile>
+    <ClCompile Include="se.cpp">
+      <Filter>源文件\game\killer</Filter>
+    </ClCompile>
+    <ClCompile Include="ckc.cpp">
+      <Filter>源文件\game\killer</Filter>
+    </ClCompile>
+    <ClCompile Include="ot.cpp">
+      <Filter>源文件\game\killer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -88,6 +97,15 @@
     </ClInclude>
     <ClInclude Include="poker.h">
       <Filter>头文件\game\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="se.h">
+      <Filter>头文件\game\killer</Filter>
+    </ClInclude>
+    <ClInclude Include="ckc.h">
+      <Filter>头文件\game\killer</Filter>
+    </ClInclude>
+    <ClInclude Include="ot.h">
+      <Filter>头文件\game\killer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

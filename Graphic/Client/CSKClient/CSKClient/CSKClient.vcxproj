@@ -144,21 +144,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="card.cpp" />
+    <ClCompile Include="ckc.cpp" />
     <ClCompile Include="ground.cpp" />
     <ClCompile Include="killer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="manager.cpp" />
+    <ClCompile Include="ot.cpp" />
     <ClCompile Include="poker.cpp" />
+    <ClCompile Include="se.cpp" />
     <ClCompile Include="skill.cpp" />
     <ClCompile Include="table.cpp" />
     <ClCompile Include="cs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="card.h" />
+    <ClInclude Include="ckc.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="killer.h" />
     <ClInclude Include="manager.h" />
+    <ClInclude Include="ot.h" />
     <ClInclude Include="poker.h" />
+    <ClInclude Include="se.h" />
     <ClInclude Include="skill.h" />
     <ClInclude Include="cs.h" />
   </ItemGroup>
