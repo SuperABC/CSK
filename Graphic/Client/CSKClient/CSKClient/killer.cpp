@@ -163,44 +163,64 @@ Killer *Killer::newKiller(KILLER k, int p) {
 		ret = new SE_cfc(p);
 		break;
 	case CKC_LWYD:
+		ret = new CKC_lwyd(p);
 		break;
 	case CKC_LWX:
+		ret = new CKC_lwx(p);
 		break;
 	case CKC_ZZH:
+		ret = new CKC_zzh(p);
 		break;
 	case CKC_ZS:
+		ret = new CKC_zs(p);
 		break;
 	case CKC_ZCY:
+		ret = new CKC_zcy(p);
 		break;
 	case CKC_ZSB:
+		ret = new CKC_zsb(p);
 		break;
 	case CKC_YTY:
+		ret = new CKC_yty(p);
 		break;
 	case CKC_LJW:
+		ret = new CKC_ljw(p);
 		break;
 	case CKC_SWYD:
+		ret = new CKC_swyd(p);
 		break;
 	case CKC_WZH:
+		ret = new CKC_wzh(p);
 		break;
 	case OT_GY:
+		ret = new OT_gy(p);
 		break;
 	case OT_SMQ:
+		ret = new OT_smq(p);
 		break;
 	case OT_YXTR:
+		ret = new OT_yxtr(p);
 		break;
 	case OT_ZY:
+		ret = new OT_zy(p);
 		break;
 	case OT_YS:
+		ret = new OT_ys(p);
 		break;
 	case OT_ZH:
+		ret = new OT_zh(p);
 		break;
 	case OT_YX:
+		ret = new OT_yx(p);
 		break;
 	case OT_LZL:
+		ret = new OT_lzl(p);
 		break;
 	case OT_SH:
+		ret = new OT_sh(p);
 		break;
 	case OT_ZJS:
+		ret = new OT_zjs(p);
 		break;
 	case NO_KILLER:
 	case KILLER_END:
