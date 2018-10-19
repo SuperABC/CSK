@@ -1,0 +1,259 @@
+#include "main.h"
+#include "killer.h"
+#include "card.h"
+#include "poker.h"
+#include "manager.h"
+
+extern SOCKET client;
+extern int userId, roomId;
+
+extern enum PROCSTATUS status;
+
+extern const char *killerName[];
+extern const char *killerDetail[];
+
+Manager *manager;
+extern vector<Poker> pokerList;
+
+int blocked = 1;
+
+void dropCard(widgetObj *w) {
+	unsigned int max = manager->getSelf()->getHealth();
+
+	vector<int> list;
+	if (pokerList.size() > max) {
+		for (unsigned int i = 0; i < pokerList.size(); i++) {
+			if (pokerList[i].widget->hide == 0)max--;
+			else list.push_back(i);
+		}
+		if (max != 0)return;
+
+		removePoker(list);
+	}
+
+	struct JSON *ret = createJson();
+
+	setStringContent(ret, "inst", (char *)"end");
+	setIntContent(ret, "room", roomId);
+	socketSend(client, writeJson(ret));
+
+	freeJson(ret);
+	setWidgetTop("drop");
+	deleteWidgetByName("drop");
+}
+void finishUse(widgetObj *w) {
+	struct JSON *ret = createJson();
+
+	setStringContent(ret, "inst", (char *)"end");
+	setIntContent(ret, "room", roomId);
+	socketSend(client, writeJson(ret));
+
+	freeJson(ret);
+	setWidgetTop("finish");
+	deleteWidgetByName("finish");
+}
+void aimEnemy(widgetObj *w) {
+	vector<Card> card;
+	vector<int> drop;
+	for (unsigned int i = 0; i < pokerList.size(); i++) {
+		if (pokerList[i].widget->hide) {
+			card.push_back(pokerList[i]);
+			drop.push_back(i);
+		}
+	}
+	if (card.size() == 1) {
+		switch (card[0].cont) {
+		case CC_PREVENT: {
+			int aim = w->value % manager->getPlayer().size();
+			struct JSON *json = createJson();
+			setStringContent(json, "inst", (char *)"game");
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
+			setStringContent(json, "action", (char *)"prevent");
+			setIntContent(json, "aim", aim);
+
+			socketSend(client, writeJson(json));
+			freeJson(json);
+
+			removePoker(drop);
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+void layoutPlaying() {
+	easyWidget(SG_OUTPUT, "self", 500, 300, 120, 160,
+		(killerName[manager->getSelf()->getKiller()] + string("\n") +
+		std::to_string(manager->getSelf()->getHealth()) + "/" +
+		std::to_string(manager->getSelf()->getFull())).data(), NULL);
+	getWidgetByName("self")->tf.size = 32;
+	int num = manager->getPlayer().size();
+	int pos = manager->getPosition();
+	for (int i = 1; i < num; i++) {
+		easyWidget(SG_OUTPUT,
+			(string("enemy") + std::to_string((pos + i) % num)).data(),
+			10 + 80 * (i - 1), 10, 60, 80,
+			(killerName[manager->getPlayer()[(pos + i) % num]->getKiller()] + string("\n") +
+				std::to_string(manager->getPlayer()[(pos + i) % num]->getHealth()) + "/" +
+				std::to_string(manager->getPlayer()[(pos + i) % num]->getFull())).data(),
+			(mouseClickUser)aimEnemy);
+		getWidgetByName((string("enemy") + std::to_string((pos + i) % num)).data())->value = (pos + i) % num;
+	}
+	easyWidget(SG_LABEL, "instruction", 10, 450, 480, 20, "", NULL);
+	getWidgetByName("instruction")->tf.size = 16;
+
+	for (int i = 0; i < 4; i++) {
+		setWidgetTop((string("poker") + std::to_string(i)).data());
+	}
+}
+void clearPlaying() {
+	if (getWidgetByName("self"))deleteWidgetByName("self");
+	if (getWidgetByName("enemy0"))deleteWidgetByName("enemy0");
+	if (getWidgetByName("enemy1"))deleteWidgetByName("enemy1");
+	if (getWidgetByName("enemy2"))deleteWidgetByName("enemy2");
+	if (getWidgetByName("enemy3"))deleteWidgetByName("enemy3");
+	if (getWidgetByName("enemy4"))deleteWidgetByName("enemy4");
+	if (getWidgetByName("enemy5"))deleteWidgetByName("enemy5");
+	if (getWidgetByName("enemy6"))deleteWidgetByName("enemy6");
+	if (getWidgetByName("enemy7"))deleteWidgetByName("enemy7");
+	if (getWidgetByName("instruction"))deleteWidgetByName("instruction");
+
+	vector<int> drop;
+	for (unsigned int i = 0; i < pokerList.size(); i++) {
+		drop.push_back(i);
+	}
+	removePoker(drop);
+	if (getWidgetByName("finish"))deleteWidgetByName("finish");
+	if (getWidgetByName("drop"))deleteWidgetByName("drop");
+}
+
+void gameInitProcess(struct JSON *json) {
+	int num = getContent(json, "num")->data.json_int;
+	struct JSON *killers = getContent(json, "killers")->data.json_array;
+	vector<Killer *>list;
+	for (int i = 0; i < num; i++) {
+		struct JSON *obj = getElement(killers, i)->data.json_object;
+		Killer * k = Killer::newKiller((KILLER)getContent(obj, "killer")->data.json_int, i);
+		k->setName(getContent(obj, "user")->data.json_string);
+		list.push_back(k);
+	}
+	manager = new Manager(list, getContent(json, "position")->data.json_int);
+
+	status = PS_PLAYING;
+}
+void cardInitProcess(struct JSON *json) {
+	struct JSON *cards = getContent(json, "cards")->data.json_array;
+
+	for (int i = 0; i < 4; i++) {
+		Card c;
+		struct JSON *card = getElement(cards, i)->data.json_object;
+		c.color = (Color)getContent(card, "color")->data.json_int;
+		c.num = getContent(card, "num")->data.json_int;
+		c.cont = (Content)getContent(card, "content")->data.json_int;
+		
+		addPoker(Poker(c));
+	}
+}
+void nextStateProcess(struct JSON *json) {
+	STEP step = manager->nextState();
+
+	if (!manager->myTurn())return;
+	struct JSON *ret = createJson();
+	switch (step) {
+	case CSK_START:
+	case CSK_END:
+		break;
+	case CSK_USE:
+		easyWidget(SG_BUTTON, "finish", 400, 300, 80, 24, "结束", (mouseClickUser)finishUse);
+		break;
+	case CSK_DROP:
+		easyWidget(SG_BUTTON, "drop", 400, 300, 80, 24, "弃牌", (mouseClickUser)dropCard);
+		break;
+	case CSK_GET:
+		break;
+	default:
+		break;
+	}
+	freeJson(ret);
+}
+void touchCardProcess(struct JSON *json) {
+	struct JSON *cards = getContent(json, "cards")->data.json_array;
+	int num = getContent(json, "num")->data.json_int;
+
+	for (int i = 0; i < num; i++) {
+		Card c;
+		struct JSON *card = getElement(cards, i)->data.json_object;
+		c.color = (Color)getContent(card, "color")->data.json_int;
+		c.num = getContent(card, "num")->data.json_int;
+		c.cont = (Content)getContent(card, "content")->data.json_int;
+
+		addPoker(Poker(c));
+	}
+}
+void gameReceiveProcess(struct JSON *json) {
+	string action = getContent(json, "action")->data.json_string;
+
+	struct JSON *reply = createJson();
+	if (action == "prevent") {
+		int aim = getContent(json, "aim")->data.json_int;
+		if (aim == manager->getPosition()) {
+			setStringContent(reply, "inst", (char *)"game");
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+			setStringContent(reply, "action", (char *)"hurt");
+			setIntContent(reply, "amount", 1);
+
+			socketSend(client, writeJson(reply));
+		}
+	}
+	if (action == "hurt") {
+		int obj = getContent(json, "position")->data.json_int;
+		if (obj != manager->getPosition()) {
+			manager->getPlayer()[obj]->hurtHealth(1);
+			strcpy((char *)getWidgetByName((string("enemy") + std::to_string(obj)).data())->content,
+				(killerName[manager->getPlayer()[obj]->getKiller()] + string("\n") +
+					std::to_string(manager->getPlayer()[obj]->getHealth()) + "/" +
+					std::to_string(manager->getPlayer()[obj]->getFull())).data());
+			getWidgetByName((string("enemy") + std::to_string(obj)).data())->valid = 0;
+		}
+		else {
+			manager->getSelf()->hurtHealth(1);
+			strcpy((char *)getWidgetByName("self")->content,
+				(killerName[manager->getSelf()->getKiller()] + string("\n") +
+					std::to_string(manager->getSelf()->getHealth()) + "/" +
+					std::to_string(manager->getSelf()->getFull())).data());
+			getWidgetByName("self")->valid = 0;
+			if (manager->getSelf()->getHealth() <= 0) {
+				struct JSON *ret = createJson();
+				setStringContent(ret, "inst", (char *)"dying");
+				setIntContent(ret, "room", roomId);
+				setIntContent(ret, "position", manager->getPosition());
+				setIntContent(ret, "amount", 1 - manager->getSelf()->getHealth());
+				socketSend(client, writeJson(ret));
+				freeJson(ret);
+			}
+		}
+	}
+	freeJson(reply);
+}
+void deadOneProcess(struct JSON *json) {
+	int pos = getContent(json, "pos")->data.json_int;
+
+	if (pos == manager->getPosition()) {
+		alertInfo("您挂科了！", "游戏提示", ALERT_ICON_INFORMATION);
+	}
+	else {
+
+	}
+}
+void gameOverProcess(struct JSON *json) {
+	alertInfo("游戏结束！", "游戏提示", ALERT_ICON_INFORMATION);
+
+	status = PS_LOGIN;
+}
+
+void tableLoop() {
+
+}
