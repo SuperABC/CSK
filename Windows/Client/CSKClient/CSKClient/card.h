@@ -79,6 +79,13 @@ public:
 	Card() : num(0), cont(CC_NULL), color(CS_NULL) {}
 	Card(int num, int cont, int color) :
 		num(num), cont(Content(cont)), color(Color(color)) {}
+	Card(struct JSON *json) {
+		cont = (Content)getContent(json, "cont")->data.json_int;
+		color = (Color)getContent(json, "color")->data.json_int;
+		num = getContent(json, "num")->data.json_int;
+	}
+
+	struct JSON *toJson();
 };
 
 class Deck {

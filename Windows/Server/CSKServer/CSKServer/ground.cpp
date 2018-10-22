@@ -15,7 +15,7 @@ void loginProcess(struct JSON *recv, SOCKET socket) {
 	struct JSON *json = createJson();
 	for (auto u : userList) {
 		if (u->name == name) {
-			setStringContent(json, "inst", (char *)"relogin success");
+			setStringContent(json, "inst", (char *)"重连成功");
 			setIntContent(json, "id", u->userId);
 			setIntContent(json, "status", u->status);
 			socketSend(socket, writeJson(json));
@@ -24,7 +24,7 @@ void loginProcess(struct JSON *recv, SOCKET socket) {
 			return;
 		}
 	}
-	setStringContent(json, "inst", (char *)"login success");
+	setStringContent(json, "inst", (char *)"登录成功");
 	setIntContent(json, "id", userList.size());
 	setIntContent(json, "status", US_LOGIN);
 	socketSend(socket, writeJson(json));
@@ -38,7 +38,7 @@ void roomProcess(struct JSON *recv, SOCKET socket) {
 	for (auto r : roomList) {
 		if (r == NULL)continue;
 		if (r->waiting()) {
-			setStringContent(json, "inst", (char *)"room success");
+			setStringContent(json, "inst", (char *)"加房成功");
 			setIntContent(json, "id", r->roomId);
 			socketSend(socket, writeJson(json));
 			r->comein(userList[id]);
@@ -47,7 +47,7 @@ void roomProcess(struct JSON *recv, SOCKET socket) {
 	}
 	if (userList[id]->status == US_LOGIN) {
 		Room *r = new Room(roomList.size());
-		setStringContent(json, "inst", (char *)"room success");
+		setStringContent(json, "inst", (char *)"加房成功");
 		setIntContent(json, "id", r->roomId);
 		socketSend(socket, writeJson(json));
 		r->comein(userList[id]);
@@ -75,7 +75,7 @@ void chooseKiller(int roomId) {
 			killerSet.pop_back();
 		}
 		struct JSON *json = createJson();
-		setStringContent(json, "inst", (char *)"choose killer");
+		setStringContent(json, "inst", (char *)"发武将牌");
 		setArrayContent(json, "list", ks);
 		socketSend(u->socket, writeJson(json));
 		freeJson(json);
@@ -88,7 +88,7 @@ void enterTable(int roomId) {
 	struct JSON *json;
 
 	json = createJson();
-	setStringContent(json, "inst", (char *)"game init");
+	setStringContent(json, "inst", (char *)"进入游戏");
 	setIntContent(json, "num", roomList[roomId]->users.size());
 	struct JSON *killerList = createJsonArray();
 	for (auto k : roomList[roomId]->users) {
@@ -111,7 +111,7 @@ void enterTable(int roomId) {
 
 	roomList[roomId]->manager = new Manager(roomList[roomId]->users);
 	json = createJson();
-	setStringContent(json, "inst", (char *)"card init");
+	setStringContent(json, "inst", (char *)"初始摸牌");
 	for (auto &u : roomList[roomId]->users) {
 		struct JSON *cardList = createJsonArray();
 		for (int i = 0; i < 4; i++) {

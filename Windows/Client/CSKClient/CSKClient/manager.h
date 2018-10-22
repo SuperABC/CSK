@@ -86,5 +86,7 @@ public:
 
 		return tmpStep;
 	}
-
+	void deadOne(int pos) {
+		players[pos]->dead = true;
+	}
 };

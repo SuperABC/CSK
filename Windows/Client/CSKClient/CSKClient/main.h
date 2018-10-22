@@ -19,7 +19,9 @@ void gameInitProcess(struct JSON *json);
 void cardInitProcess(struct JSON *json);
 void nextStateProcess(struct JSON *json);
 void touchCardProcess(struct JSON *json);
-void gameReceiveProcess(struct JSON *json);
+void actionDoneProcess(struct JSON *json);
+void useReceiveProcess(struct JSON *json);
+void gradeChangeProcess(struct JSON *json);
 void deadOneProcess(struct JSON *json);
 void gameOverProcess(struct JSON *json);
 
@@ -36,4 +38,6 @@ void clearKiller();
 void layoutPlaying();
 void clearPlaying();
 
+void lockTable();
+void unlockTable();
 void tableLoop();

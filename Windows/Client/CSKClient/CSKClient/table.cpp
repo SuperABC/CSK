@@ -15,8 +15,60 @@ extern const char *killerDetail[];
 Manager *manager;
 extern vector<Poker> pokerList;
 
-int blocked = 1;
+void waitFor(const char *inst) {
+	delay(100);
+}
+void lockTable() {
+	//alertInfo("locked", "", 0);
+}
+void unlockTable() {
+	//alertInfo("locked", "", 0);
+}
 
+void aimEnemy(widgetObj *w) {
+	vector<Card> card;
+	vector<int> drop;
+	for (unsigned int i = 0; i < pokerList.size(); i++) {
+		if (pokerList[i].widget->hide) {
+			card.push_back(pokerList[i]);
+			drop.push_back(i);
+		}
+	}
+	if (card.size() == 1) {
+		switch (card[0].cont) {
+		case CC_PREVENT: {
+			int aim = w->value % manager->getPlayer().size();
+			struct JSON *json = createJson();
+			setStringContent(json, "inst", (char *)"使用手牌");
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
+			setStringContent(json, "action", (char *)"prevent");
+			setObjectContent(json, "card", card[0].toJson());
+			setIntContent(json, "aim", aim);
+
+			socketSend(client, writeJson(json));
+			freeJson(json);
+
+			removePoker(drop);
+			//lockTable();
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+void finishUse(widgetObj *w) {
+	struct JSON *ret = createJson();
+
+	setStringContent(ret, "inst", (char *)"出牌结束");
+	setIntContent(ret, "room", roomId);
+	socketSend(client, writeJson(ret));
+
+	freeJson(ret);
+	setWidgetTop("finish");
+	deleteWidgetByName("finish");
+}
 void dropCard(widgetObj *w) {
 	unsigned int max = manager->getSelf()->getHealth();
 
@@ -33,55 +85,13 @@ void dropCard(widgetObj *w) {
 
 	struct JSON *ret = createJson();
 
-	setStringContent(ret, "inst", (char *)"end");
+	setStringContent(ret, "inst", (char *)"弃牌结束");
 	setIntContent(ret, "room", roomId);
 	socketSend(client, writeJson(ret));
 
 	freeJson(ret);
 	setWidgetTop("drop");
 	deleteWidgetByName("drop");
-}
-void finishUse(widgetObj *w) {
-	struct JSON *ret = createJson();
-
-	setStringContent(ret, "inst", (char *)"end");
-	setIntContent(ret, "room", roomId);
-	socketSend(client, writeJson(ret));
-
-	freeJson(ret);
-	setWidgetTop("finish");
-	deleteWidgetByName("finish");
-}
-void aimEnemy(widgetObj *w) {
-	vector<Card> card;
-	vector<int> drop;
-	for (unsigned int i = 0; i < pokerList.size(); i++) {
-		if (pokerList[i].widget->hide) {
-			card.push_back(pokerList[i]);
-			drop.push_back(i);
-		}
-	}
-	if (card.size() == 1) {
-		switch (card[0].cont) {
-		case CC_PREVENT: {
-			int aim = w->value % manager->getPlayer().size();
-			struct JSON *json = createJson();
-			setStringContent(json, "inst", (char *)"game");
-			setIntContent(json, "room", roomId);
-			setIntContent(json, "position", manager->getPosition());
-			setStringContent(json, "action", (char *)"prevent");
-			setIntContent(json, "aim", aim);
-
-			socketSend(client, writeJson(json));
-			freeJson(json);
-
-			removePoker(drop);
-			break;
-		}
-		default:
-			break;
-		}
-	}
 }
 void layoutPlaying() {
 	easyWidget(SG_OUTPUT, "self", 500, 300, 120, 160,
@@ -163,15 +173,16 @@ void nextStateProcess(struct JSON *json) {
 	struct JSON *ret = createJson();
 	switch (step) {
 	case CSK_START:
+	case CSK_GET:
 	case CSK_END:
 		break;
 	case CSK_USE:
+		//waitFor("开始出牌");
 		easyWidget(SG_BUTTON, "finish", 400, 300, 80, 24, "结束", (mouseClickUser)finishUse);
 		break;
 	case CSK_DROP:
+		//waitFor("开始弃牌");
 		easyWidget(SG_BUTTON, "drop", 400, 300, 80, 24, "弃牌", (mouseClickUser)dropCard);
-		break;
-	case CSK_GET:
 		break;
 	default:
 		break;
@@ -192,51 +203,56 @@ void touchCardProcess(struct JSON *json) {
 		addPoker(Poker(c));
 	}
 }
-void gameReceiveProcess(struct JSON *json) {
+void useReceiveProcess(struct JSON *json) {
 	string action = getContent(json, "action")->data.json_string;
 
 	struct JSON *reply = createJson();
 	if (action == "prevent") {
 		int aim = getContent(json, "aim")->data.json_int;
 		if (aim == manager->getPosition()) {
-			setStringContent(reply, "inst", (char *)"game");
 			setIntContent(reply, "room", roomId);
 			setIntContent(reply, "position", manager->getPosition());
-			setStringContent(reply, "action", (char *)"hurt");
-			setIntContent(reply, "amount", 1);
 
+			setStringContent(reply, "inst", (char *)"绩点变化");
+			setIntContent(reply, "amount", -1);
+			socketSend(client, writeJson(reply));
+
+			waitFor("结算完成");
+			setStringContent(reply, "inst", (char *)"结算完成");
+			deleteContent(reply, "amount");
 			socketSend(client, writeJson(reply));
 		}
 	}
-	if (action == "hurt") {
-		int obj = getContent(json, "position")->data.json_int;
-		if (obj != manager->getPosition()) {
-			manager->getPlayer()[obj]->hurtHealth(1);
-			strcpy((char *)getWidgetByName((string("enemy") + std::to_string(obj)).data())->content,
-				(killerName[manager->getPlayer()[obj]->getKiller()] + string("\n") +
-					std::to_string(manager->getPlayer()[obj]->getHealth()) + "/" +
-					std::to_string(manager->getPlayer()[obj]->getFull())).data());
-			getWidgetByName((string("enemy") + std::to_string(obj)).data())->valid = 0;
-		}
-		else {
-			manager->getSelf()->hurtHealth(1);
-			strcpy((char *)getWidgetByName("self")->content,
-				(killerName[manager->getSelf()->getKiller()] + string("\n") +
-					std::to_string(manager->getSelf()->getHealth()) + "/" +
-					std::to_string(manager->getSelf()->getFull())).data());
-			getWidgetByName("self")->valid = 0;
-			if (manager->getSelf()->getHealth() <= 0) {
-				struct JSON *ret = createJson();
-				setStringContent(ret, "inst", (char *)"dying");
-				setIntContent(ret, "room", roomId);
-				setIntContent(ret, "position", manager->getPosition());
-				setIntContent(ret, "amount", 1 - manager->getSelf()->getHealth());
-				socketSend(client, writeJson(ret));
-				freeJson(ret);
-			}
-		}
-	}
 	freeJson(reply);
+}
+void actionDoneProcess(struct JSON *json) {
+	//unlockTable();
+}
+void gradeChangeProcess(struct JSON *json) {
+	int obj = getContent(json, "position")->data.json_int;
+	int amount = getContent(json, "amount")->data.json_int;
+	if (obj != manager->getPosition()) {
+		if (amount < 0)
+			manager->getPlayer()[obj]->hurtHealth(-amount);
+		else
+			manager->getPlayer()[obj]->recureHealth(amount);
+		strcpy((char *)getWidgetByName((string("enemy") + std::to_string(obj)).data())->content,
+			(killerName[manager->getPlayer()[obj]->getKiller()] + string("\n") +
+				std::to_string(manager->getPlayer()[obj]->getHealth()) + "/" +
+				std::to_string(manager->getPlayer()[obj]->getFull())).data());
+		getWidgetByName((string("enemy") + std::to_string(obj)).data())->valid = 0;
+	}
+	else {
+		if (amount < 0)
+			manager->getSelf()->hurtHealth(-amount);
+		else
+			manager->getSelf()->recureHealth(amount);
+		strcpy((char *)getWidgetByName("self")->content,
+			(killerName[manager->getSelf()->getKiller()] + string("\n") +
+				std::to_string(manager->getSelf()->getHealth()) + "/" +
+				std::to_string(manager->getSelf()->getFull())).data());
+		getWidgetByName("self")->valid = 0;
+	}
 }
 void deadOneProcess(struct JSON *json) {
 	int pos = getContent(json, "pos")->data.json_int;
@@ -247,6 +263,7 @@ void deadOneProcess(struct JSON *json) {
 	else {
 
 	}
+	manager->deadOne(pos);
 }
 void gameOverProcess(struct JSON *json) {
 	alertInfo("游戏结束！", "游戏提示", ALERT_ICON_INFORMATION);

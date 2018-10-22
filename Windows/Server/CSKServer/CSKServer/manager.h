@@ -13,7 +13,8 @@ enum STEP {
 	CSK_USE,
 	CSK_DROP,
 	CSK_END,
-	CSK_FINISH
+	CSK_FINISH,
+	CSK_ASKING
 };
 
 class Roommate : public User {
@@ -28,6 +29,7 @@ private:
 	vector<Killer *> players;
 
 	Deck untouch, used;
+	vector<vector<int>> waitingList;
 
 	bool gameOver() {
 		int alive = 0;
@@ -54,11 +56,37 @@ public:
 		}
 	}
 
+	int waitingLevel() {
+		return waitingList.size();
+	}
+	void waitFor(vector<int> list) {
+		if (list.empty())return;
+		waitingList.push_back(list);
+	}
+	void responseCome(int r) {
+		vector<int> &list = waitingList.back();
+		for (unsigned int i = 0; i < list.size(); i++) {
+			if (list[i] == r) {
+				list[i] = list.back();
+				list.pop_back();
+				break;
+			}
+		}
+		if (list.empty())
+			waitingList.pop_back();
+	}
+	bool isWaiting(unsigned int level = 0) {
+		return waitingList.size() > level;
+	}
+
 	int getPlayer() { return tmpPlayer; }
 	Card touchCard() {
 		Card ret = untouch.cont.back();
 		untouch.cont.pop_back();
 		return ret;
+	}
+	void dropCard(Card c) {
+		used.cont.push_back(c);
 	}
 	int calDist(unsigned int i, unsigned int j) {
 		int live = 0, di = 0, dj = 0;
@@ -121,5 +149,10 @@ public:
 			tmpStep = CSK_FINISH;
 		}
 	}
-
+	int gradeChange(int pos, int amount) {
+		if (amount < 0)
+			return players[pos]->hurtHealth(-amount);
+		else
+			return players[pos]->recureHealth(amount);
+	}
 };

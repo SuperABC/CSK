@@ -1,6 +1,14 @@
 #include "card.h"
 #include "manager.h"
 
+struct JSON *Card::toJson() {
+	struct JSON *json = createJson();
+	setIntContent(json, "cont", cont);
+	setIntContent(json, "color", color);
+	setIntContent(json, "num", num);
+	return json;
+}
+
 string cardName(Card c) {
 	string ret = "";
 	switch (c.color) {

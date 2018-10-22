@@ -225,5 +225,14 @@ public:
 		return funcCards;
 	}
 
+	int hurtHealth(int h) {
+		health -= h;
+		return health;
+	}
+	int recureHealth(int h) {
+		health += h;
+		if (health > full)health = full;
+		return health;
+	}
 };
 

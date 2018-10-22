@@ -16,40 +16,59 @@ void mainHandler(char *str, SOCKET socket) {
 	struct JSON *json = readJson(str);
 	string inst = getContent(json, "inst")->data.json_string;
 
-	if (inst == "login") {
+	cout << inst << endl;
+
+	if (inst == "登录请求") {
 		loginProcess(json, socket);
 	}
-	else if (inst == "room") {
+	else if (inst == "加入房间") {
 		roomProcess(json, socket);
 	}
-	else if (inst == "killer") {
+	else if (inst == "选择武将") {
 		killerProcess(json, socket);
 	}
 
-	if (inst == "game") {
+	if (inst == "出牌结束") {
 		int roomId = getContent(json, "room")->data.json_int;
-		int playerPos = getContent(json, "position")->data.json_int;
-		relayProcess(str, roomId, playerPos);
-	}
-	else if (inst == "end") {
-		int roomId = getContent(json, "room")->data.json_int;
+		useProcess(json, roomId);
 		stateProcess(roomId);
 	}
-	else if (inst == "dying") {
+	else if (inst == "弃牌结束") {
+		int roomId = getContent(json, "room")->data.json_int;
+		dropProcess(json, roomId);
+		stateProcess(roomId);
+	}
+	else if (inst == "使用手牌") {
 		int roomId = getContent(json, "room")->data.json_int;
 		int playerPos = getContent(json, "position")->data.json_int;
-		int askAmount = getContent(json, "amount")->data.json_int;
-		dyingProcess(roomId, playerPos, askAmount);
+		char *cardCont = getContent(json, "action")->data.json_string;
+		cardProcess(str, roomId, playerPos, cardCont);
+	}
+	else if (inst == "结算完成") {
+		int roomId = getContent(json, "room")->data.json_int;
+		int playerPos = getContent(json, "position")->data.json_int;
+		doneProcess(roomId, playerPos);
+	}
+	else if (inst == "绩点变化") {
+		int roomId = getContent(json, "room")->data.json_int;
+		int playerPos = getContent(json, "position")->data.json_int;
+		gradeProcess(str, roomId, playerPos);
 	}
 
 	freeJson(json);
 }
 NEW_THREAD_FUNC(singleMsg) {
 	SOCKET tmp = connection;
-	char buf[256] = { 0 };
+	char buffer[256] = { 0 };
+	char *buf;
 
-	while (socketReceive(tmp, buf, 256) != SG_CONNECTION_FAILED) {
-		mainHandler(buf, tmp);
+	while (socketReceive(tmp, buffer, 256) != SG_CONNECTION_FAILED) {
+		buf = buffer;
+		while (buf[0]) {
+			mainHandler(buf, tmp);
+			buf += strlen(buf) + 1;
+		}
+		memset(buffer, 0, 256);
 	}
 	closeSocket(tmp);
 	return 0;
@@ -93,6 +112,7 @@ void cmdProc(string cmd) {
 	}
 	if (cmd == "rooms") {
 		for (auto r : roomList) {
+			if (r == NULL)continue;
 			cout << r->roomId << "号房间:人数" << r->users.size();
 			switch (r->status) {
 			case RS_WAITING:

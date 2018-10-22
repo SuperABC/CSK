@@ -19,7 +19,7 @@ void loginPlat(widgetObj *w) {
 	widgetObj *password = getWidgetByName("password");
 
 	struct JSON *json = createJson();
-	setStringContent(json, "inst", (char *)"login");
+	setStringContent(json, "inst", (char *)"登录请求");
 	setStringContent(json, "name", (char *)user->content);
 	setStringContent(json, "password", (char *)password->content);
 	socketSend(client, writeJson(json));
@@ -68,7 +68,7 @@ void clearStart() {
 
 void enterRoom() {
 	struct JSON *ret = createJson();
-	setStringContent(ret, "inst", (char *)"room");
+	setStringContent(ret, "inst", (char *)"加入房间");
 	setIntContent(ret, "id", userId);
 	socketSend(client, writeJson(ret));
 	freeJson(ret);
@@ -91,6 +91,7 @@ void killerProcess(struct JSON *json) {
 	status = PS_KILLER;
 	struct JSON *list = getContent(json, "list")->data.json_array;
 	struct JSON_Item *item = NULL;
+	range.clear();
 	for (int i = 0; (item = getElement(list, i)) != NULL; i++) {
 		range.push_back(item->data.json_int);
 	}
@@ -119,7 +120,7 @@ void mouseMoveKiller(widgetObj *w, int x, int y) {
 }
 void selectKiller(widgetObj *w) {
 	struct JSON *json = createJson();
-	setStringContent(json, "inst", (char *)"killer");
+	setStringContent(json, "inst", (char *)"选择武将");
 	setIntContent(json, "id", userId);
 	setIntContent(json, "killer", range[w->value]);
 	socketSend(client, writeJson(json));
