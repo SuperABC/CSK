@@ -1,10 +1,13 @@
 #include "main.h"
 #include "killer.h"
 #include <vector>
+#include <mutex>
 
 SOCKET client;
 
 enum PROCSTATUS status;
+
+extern vector<int> waitingList;
 
 NEW_THREAD_FUNC(msgRecv) {
 	char buffer[256] = { 0 };
@@ -18,46 +21,57 @@ NEW_THREAD_FUNC(msgRecv) {
 
 			if (inst == "登录成功") {
 				loginProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "重连成功") {
 				reloginProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "加房成功") {
 				roomProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "发武将牌") {
 				killerProcess(json);
+				freeJson(json);
 			}
 
+			if (inst == "结算完成") {
+				waitingList.pop_back();
+				freeJson(json);
+			}
 			else if (inst == "进入游戏") {
 				gameInitProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "初始摸牌") {
 				cardInitProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "阶段结束") {
 				nextStateProcess(json);
+				freeJson(json);
 			}
-			else if (inst == "回合摸牌") {
+			else if (inst == "获得手牌") {
 				touchCardProcess(json);
-			}
-			else if (inst == "使用手牌") {
-				useReceiveProcess(json);
-			}
-			else if (inst == "结算完成") {
-				actionDoneProcess(json);
-			}
-			else if (inst == "绩点变化") {
-				gradeChangeProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "角色挂科") {
 				deadOneProcess(json);
+				freeJson(json);
 			}
 			else if (inst == "游戏结束") {
 				gameOverProcess(json);
+				freeJson(json);
 			}
-			freeJson(json);
 
+			else if (inst == "使用手牌") {
+				createThread(useReceiveProcess, json);
+			}
+			else if (inst == "绩点变化") {
+				createThread(gradeChangeProcess, json);
+			}
+			
 			buf += strlen(buf) + 1;
 		}
 

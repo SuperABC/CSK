@@ -43,6 +43,8 @@ public:
 	unsigned int tmpPlayer = 0;
 	STEP tmpStep = CSK_INIT;
 
+	vector<Card> tmpCard;
+
 	Manager(vector<Roommate *> p) {
 		int i = 0;
 		for (auto p : p) {
@@ -53,6 +55,11 @@ public:
 	~Manager() {
 		for (auto k : players) {
 			delete k;
+		}
+	}
+	void logInfo() {
+		for (auto p : players) {
+			std::cout << p->position << " " << p->getHealth() << "/" << p->getFull() << std::endl;
 		}
 	}
 
@@ -81,6 +88,11 @@ public:
 
 	int getPlayer() { return tmpPlayer; }
 	Card touchCard() {
+		if (untouch.cont.size() == 0) {
+			untouch.cont = used.cont;
+			used.cont.clear();
+			shuffleVector(untouch.cont);
+		}
 		Card ret = untouch.cont.back();
 		untouch.cont.pop_back();
 		return ret;

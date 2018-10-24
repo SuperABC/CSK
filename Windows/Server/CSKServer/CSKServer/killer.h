@@ -210,7 +210,7 @@ public:
 
 	KILLER getKiller() { return killer; }
 	int getFull() { return full; }
-	int getHealthl() { return health; }
+	int getHealth() { return health; }
 
 	Deck getHandCards() {
 		return handCards;

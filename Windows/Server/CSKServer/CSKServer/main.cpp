@@ -44,6 +44,12 @@ void mainHandler(char *str, SOCKET socket) {
 		char *cardCont = getContent(json, "action")->data.json_string;
 		cardProcess(str, roomId, playerPos, cardCont);
 	}
+	else if (inst == "打出手牌") {
+		int roomId = getContent(json, "room")->data.json_int;
+		int playerPos = getContent(json, "position")->data.json_int;
+		char *cardCont = getContent(json, "action")->data.json_string;
+		replyProcess(str, roomId, playerPos, cardCont);
+	}
 	else if (inst == "结算完成") {
 		int roomId = getContent(json, "room")->data.json_int;
 		int playerPos = getContent(json, "position")->data.json_int;
@@ -52,7 +58,8 @@ void mainHandler(char *str, SOCKET socket) {
 	else if (inst == "绩点变化") {
 		int roomId = getContent(json, "room")->data.json_int;
 		int playerPos = getContent(json, "position")->data.json_int;
-		gradeProcess(str, roomId, playerPos);
+		int changeAmount = getContent(json, "amount")->data.json_int;
+		gradeProcess(str, roomId, playerPos, changeAmount);
 	}
 
 	freeJson(json);
@@ -84,10 +91,10 @@ NEW_THREAD_FUNC(socketResponse) {
 }
 
 void cmdProc(string cmd) {
-	if (cmd == "status") {
+	if (cmd == "server status") {
 		cout << "CSK Server is running." << endl;
 	}
-	if (cmd == "users") {
+	if (cmd == "view users") {
 		for (auto u : userList) {
 			cout << u->name << ":";
 			switch (u->status) {
@@ -110,7 +117,7 @@ void cmdProc(string cmd) {
 			cout << endl;
 		}
 	}
-	if (cmd == "rooms") {
+	if (cmd == "view rooms") {
 		for (auto r : roomList) {
 			if (r == NULL)continue;
 			cout << r->roomId << "号房间:人数" << r->users.size();
@@ -127,9 +134,19 @@ void cmdProc(string cmd) {
 			cout << endl;
 		}
 	}
-	if (cmd == "newroom") {
+	if (cmd == "new room") {
 		Room *r = new Room(roomList.size());
 		roomList.push_back(r);
+	}
+	if (cmd == "veiw managers") {
+		for (auto r : roomList) {
+			if (r == NULL)continue;
+			cout << r->roomId << "号房间:人数" << r->users.size() << endl;
+			if (r->manager) {
+				r->manager->logInfo();
+			}
+			cout << endl;
+		}
 	}
 }
 

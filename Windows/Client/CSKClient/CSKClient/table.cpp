@@ -3,6 +3,7 @@
 #include "card.h"
 #include "poker.h"
 #include "manager.h"
+#include <mutex>
 
 extern SOCKET client;
 extern int userId, roomId;
@@ -15,16 +16,62 @@ extern const char *killerDetail[];
 Manager *manager;
 extern vector<Poker> pokerList;
 
+vector<int> waitingList;
+
 void waitFor(const char *inst) {
-	delay(100);
+	unsigned int level = waitingList.size();
+	waitingList.push_back(0);
+	while (waitingList.size() > level);
 }
 void lockTable() {
 	//alertInfo("locked", "", 0);
+	getWidgetByName("use")->visible = false;
+	getWidgetByName("finish")->visible = false;
 }
-void unlockTable() {
-	//alertInfo("locked", "", 0);
+NEW_THREAD_FUNC(unlockTable) {
+	waitFor("结算完成");
+	//alertInfo("unlocked", "", 0);
+	getWidgetByName("use")->visible = true;
+	getWidgetByName("finish")->visible = true;
+	return 0;
 }
 
+void useCard(widgetObj *w) {
+	vector<Card> card;
+	vector<int> drop;
+	for (unsigned int i = 0; i < pokerList.size(); i++) {
+		if (pokerList[i].widget->hide) {
+			card.push_back(pokerList[i]);
+			drop.push_back(i);
+		}
+	}
+	if (card.size() == 1) {
+		switch (card[0].cont) {
+		case CC_STUDY: {
+			lockTable();
+			createThread(unlockTable, NULL);
+
+			int aim = manager->getPosition();
+			struct JSON *json = createJson();
+			setStringContent(json, "inst", (char *)"绩点变化");
+			setIntContent(json, "amount", 1);
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
+			setStringContent(json, "action", (char *)"study");
+			setObjectContent(json, "card", card[0].toJson());
+			setIntContent(json, "aim", aim);
+
+			socketSend(client, writeJson(json));
+			freeJson(json);
+
+			removePoker(drop);
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
 void aimEnemy(widgetObj *w) {
 	vector<Card> card;
 	vector<int> drop;
@@ -37,6 +84,9 @@ void aimEnemy(widgetObj *w) {
 	if (card.size() == 1) {
 		switch (card[0].cont) {
 		case CC_PREVENT: {
+			lockTable();
+			createThread(unlockTable, NULL);
+
 			int aim = w->value % manager->getPlayer().size();
 			struct JSON *json = createJson();
 			setStringContent(json, "inst", (char *)"使用手牌");
@@ -50,7 +100,6 @@ void aimEnemy(widgetObj *w) {
 			freeJson(json);
 
 			removePoker(drop);
-			//lockTable();
 			break;
 		}
 		default:
@@ -66,6 +115,8 @@ void finishUse(widgetObj *w) {
 	socketSend(client, writeJson(ret));
 
 	freeJson(ret);
+	setWidgetTop("use");
+	deleteWidgetByName("use");
 	setWidgetTop("finish");
 	deleteWidgetByName("finish");
 }
@@ -73,6 +124,7 @@ void dropCard(widgetObj *w) {
 	unsigned int max = manager->getSelf()->getHealth();
 
 	vector<int> list;
+	struct JSON *cards = createJsonArray();
 	if (pokerList.size() > max) {
 		for (unsigned int i = 0; i < pokerList.size(); i++) {
 			if (pokerList[i].widget->hide == 0)max--;
@@ -80,6 +132,9 @@ void dropCard(widgetObj *w) {
 		}
 		if (max != 0)return;
 
+		for (auto i : list) {
+			setObjectElement(cards, -1, pokerList[i].toJson());
+		}
 		removePoker(list);
 	}
 
@@ -87,11 +142,79 @@ void dropCard(widgetObj *w) {
 
 	setStringContent(ret, "inst", (char *)"弃牌结束");
 	setIntContent(ret, "room", roomId);
+	setIntContent(ret, "num", list.size());
+	setArrayContent(ret, "cards", cards);
 	socketSend(client, writeJson(ret));
 
 	freeJson(ret);
 	setWidgetTop("drop");
 	deleteWidgetByName("drop");
+}
+void cardReply(widgetObj *w) {
+	deleteWidgetByName("deny");
+	deleteWidgetByName("cancel");
+
+	vector<Card> card;
+	vector<int> drop;
+	for (unsigned int i = 0; i < pokerList.size(); i++) {
+		if (pokerList[i].widget->hide) {
+			card.push_back(pokerList[i]);
+			drop.push_back(i);
+		}
+	}
+	if (card.size() == 1) {
+		switch (card[0].cont) {
+		case CC_DENY: {
+			struct JSON *reply = createJson();
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+
+			setStringContent(reply, "inst", (char *)"打出手牌");
+			setStringContent(reply, "action", (char *)"deny");
+			setObjectContent(reply, "card", card[0].toJson());
+			socketSend(client, writeJson(reply));
+
+			removePoker(drop);
+			waitFor("结算完成");
+
+			setStringContent(reply, "inst", (char *)"结算完成");
+			deleteContent(reply, "action");
+			deleteContent(reply, "card");
+			socketSend(client, writeJson(reply));
+			freeJson(reply);
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+void preventWound(widgetObj *w) {
+	deleteWidgetByName("deny");
+	deleteWidgetByName("cancel");
+
+	struct JSON *reply = createJson();
+	setIntContent(reply, "room", roomId);
+	setIntContent(reply, "position", manager->getPosition());
+
+	setStringContent(reply, "inst", (char *)"绩点变化");
+	setIntContent(reply, "amount", -1);
+	socketSend(client, writeJson(reply));
+
+	waitFor("结算完成");
+
+	setStringContent(reply, "inst", (char *)"结算完成");
+	deleteContent(reply, "amount");
+	socketSend(client, writeJson(reply));
+	freeJson(reply);
+}
+void noOperation(widgetObj *w) {
+	struct JSON *reply = createJson();
+	setStringContent(reply, "inst", (char *)"结算完成");
+	setIntContent(reply, "room", roomId);
+	setIntContent(reply, "position", manager->getPosition());
+	socketSend(client, writeJson(reply));
+	freeJson(reply);
 }
 void layoutPlaying() {
 	easyWidget(SG_OUTPUT, "self", 500, 300, 120, 160,
@@ -135,6 +258,7 @@ void clearPlaying() {
 		drop.push_back(i);
 	}
 	removePoker(drop);
+	if (getWidgetByName("use"))deleteWidgetByName("use");
 	if (getWidgetByName("finish"))deleteWidgetByName("finish");
 	if (getWidgetByName("drop"))deleteWidgetByName("drop");
 }
@@ -179,6 +303,7 @@ void nextStateProcess(struct JSON *json) {
 	case CSK_USE:
 		//waitFor("开始出牌");
 		easyWidget(SG_BUTTON, "finish", 400, 300, 80, 24, "结束", (mouseClickUser)finishUse);
+		easyWidget(SG_BUTTON, "use", 300, 300, 80, 24, "使用", (mouseClickUser)useCard);
 		break;
 	case CSK_DROP:
 		//waitFor("开始弃牌");
@@ -203,32 +328,39 @@ void touchCardProcess(struct JSON *json) {
 		addPoker(Poker(c));
 	}
 }
-void useReceiveProcess(struct JSON *json) {
+void deadOneProcess(struct JSON *json) {
+	int pos = getContent(json, "pos")->data.json_int;
+
+	if (pos == manager->getPosition()) {
+		alertInfo("您挂科了！", "游戏提示", ALERT_ICON_INFORMATION);
+	}
+	else {
+
+	}
+	manager->deadOne(pos);
+}
+void gameOverProcess(struct JSON *json) {
+	alertInfo("游戏结束！", "游戏提示", ALERT_ICON_INFORMATION);
+
+	status = PS_LOGIN;
+}
+
+NEW_THREAD_FUNC(useReceiveProcess) {
+	struct JSON *json = (struct JSON *)param;
 	string action = getContent(json, "action")->data.json_string;
 
-	struct JSON *reply = createJson();
 	if (action == "prevent") {
 		int aim = getContent(json, "aim")->data.json_int;
 		if (aim == manager->getPosition()) {
-			setIntContent(reply, "room", roomId);
-			setIntContent(reply, "position", manager->getPosition());
-
-			setStringContent(reply, "inst", (char *)"绩点变化");
-			setIntContent(reply, "amount", -1);
-			socketSend(client, writeJson(reply));
-
-			waitFor("结算完成");
-			setStringContent(reply, "inst", (char *)"结算完成");
-			deleteContent(reply, "amount");
-			socketSend(client, writeJson(reply));
+			easyWidget(SG_BUTTON, "reply", 300, 300, 80, 24, "打出", (mouseClickUser)cardReply);
+			easyWidget(SG_BUTTON, "cancel", 400, 300, 80, 24, "取消", (mouseClickUser)preventWound);
 		}
 	}
-	freeJson(reply);
+	freeJson(json);
+	return 0;
 }
-void actionDoneProcess(struct JSON *json) {
-	//unlockTable();
-}
-void gradeChangeProcess(struct JSON *json) {
+NEW_THREAD_FUNC(gradeChangeProcess) {
+	struct JSON *json = (struct JSON *)param;
 	int obj = getContent(json, "position")->data.json_int;
 	int amount = getContent(json, "amount")->data.json_int;
 	if (obj != manager->getPosition()) {
@@ -253,22 +385,8 @@ void gradeChangeProcess(struct JSON *json) {
 				std::to_string(manager->getSelf()->getFull())).data());
 		getWidgetByName("self")->valid = 0;
 	}
-}
-void deadOneProcess(struct JSON *json) {
-	int pos = getContent(json, "pos")->data.json_int;
-
-	if (pos == manager->getPosition()) {
-		alertInfo("您挂科了！", "游戏提示", ALERT_ICON_INFORMATION);
-	}
-	else {
-
-	}
-	manager->deadOne(pos);
-}
-void gameOverProcess(struct JSON *json) {
-	alertInfo("游戏结束！", "游戏提示", ALERT_ICON_INFORMATION);
-
-	status = PS_LOGIN;
+	freeJson(json);
+	return 0;
 }
 
 void tableLoop() {

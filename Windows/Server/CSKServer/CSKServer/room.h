@@ -27,7 +27,7 @@ public:
 		user->roomId = roomId;
 		users.push_back(new Roommate(user));
 
-		if (users.size() == 2) {
+		if (users.size() == 3) {
 			status = RS_PLAYING;
 			chooseKiller(roomId);
 		}

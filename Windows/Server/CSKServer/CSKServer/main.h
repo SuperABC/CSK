@@ -19,12 +19,12 @@ void enterTable(int roomId);
 NEW_THREAD_FUNC(gameLoop);
 
 void stateProcess(int room);
-void cardProcess(char *recv, int room, int pos, char *cont);
-void gradeProcess(char *recv, int room, int pos);
-void doneProcess(int room, int pos);
 void useProcess(struct JSON *json, int room);
 void dropProcess(struct JSON *json, int room);
-void dyingProcess(int room, int pos, int amount);
+void cardProcess(char *recv, int room, int pos, char *cont);
+void replyProcess(char *recv, int room, int pos, char *cont);
+void doneProcess(int room, int pos);
+void gradeProcess(char *recv, int room, int pos, int amount);
 
 template<typename T>
 void shuffleVector(vector<T> &v) {
