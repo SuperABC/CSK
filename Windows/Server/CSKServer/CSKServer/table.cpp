@@ -151,6 +151,15 @@ void cardProcess(char *recv, int room, int pos, char *cont) {
 		roomList[room]->manager->waitFor(waiting);
 		roomList[room]->manager->tmpCard.push_back(Card(getContent(json, "card")->data.json_object));
 	}
+	if (string(cont) == "study") {
+		vector<int> waiting;
+		waiting.push_back(pos);
+		roomList[room]->manager->waitFor(waiting);
+		roomList[room]->manager->tmpCard.push_back(Card(getContent(json, "card")->data.json_object));
+	}
+	if (string(cont) == "equip") {
+		roomList[room]->manager->waitFor(vector<int>());
+	}
 	while (roomList[room]->manager->isWaiting(level));
 	//等待各个客户端对该出牌的响应
 
@@ -185,8 +194,14 @@ void replyProcess(char *recv, int room, int pos, char *cont) {
 
 	struct JSON *json = readJson(recv);
 	int level = roomList[room]->manager->waitingLevel();
-	if (string(cont) == "prevent") {
+	if (string(cont) == "deny") {
 		roomList[room]->manager->waitFor(vector<int>());
+		roomList[room]->manager->tmpCard.push_back(Card(getContent(json, "card")->data.json_object));
+	}
+	if (string(cont) == "study") {
+		vector<int> waiting;
+		waiting.push_back(getContent(json, "aim")->data.json_int);
+		roomList[room]->manager->waitFor(waiting);
 		roomList[room]->manager->tmpCard.push_back(Card(getContent(json, "card")->data.json_object));
 	}
 	while (roomList[room]->manager->isWaiting(level));
@@ -206,7 +221,7 @@ void gradeProcess(char *recv, int room, int pos, int amount) {
 	}
 	if (roomList[room]->manager->gradeChange(pos, amount) < 1) {
 		int level = roomList[room]->manager->waitingLevel();
-		roomList[room]->manager->waitFor(vector<int>());
+		roomList[room]->manager->waitAll();
 		while (roomList[room]->manager->isWaiting(level));
 		//等待各个客户端对濒临挂科的响应
 

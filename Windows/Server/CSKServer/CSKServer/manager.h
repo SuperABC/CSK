@@ -70,6 +70,11 @@ public:
 		if (list.empty())return;
 		waitingList.push_back(list);
 	}
+	void waitAll() {
+		vector<int> list;
+		for (auto p : players)list.push_back(p->position);
+		waitingList.push_back(list);
+	}
 	void responseCome(int r) {
 		vector<int> &list = waitingList.back();
 		for (unsigned int i = 0; i < list.size(); i++) {

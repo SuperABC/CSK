@@ -23,6 +23,7 @@ void deadOneProcess(struct JSON *json);
 void gameOverProcess(struct JSON *json);
 
 NEW_THREAD_FUNC(useReceiveProcess);
+NEW_THREAD_FUNC(replyReceiveProcess);
 NEW_THREAD_FUNC(gradeChangeProcess);
 
 void layoutStart();

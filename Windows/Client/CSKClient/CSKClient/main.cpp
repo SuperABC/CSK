@@ -68,6 +68,9 @@ NEW_THREAD_FUNC(msgRecv) {
 			else if (inst == "使用手牌") {
 				createThread(useReceiveProcess, json);
 			}
+			else if (inst == "打出手牌") {
+				createThread(replyReceiveProcess, json);
+			}
 			else if (inst == "绩点变化") {
 				createThread(gradeChangeProcess, json);
 			}

@@ -25,6 +25,8 @@ private:
 	STEP tmpStep = CSK_INIT;
 
 public:
+	int dying = -1;
+
 	Manager(vector<Killer *> p, int pos);
 	~Manager();
 

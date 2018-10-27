@@ -25,14 +25,10 @@ void waitFor(const char *inst) {
 }
 void lockTable() {
 	//alertInfo("locked", "", 0);
-	getWidgetByName("use")->visible = false;
-	getWidgetByName("finish")->visible = false;
 }
 NEW_THREAD_FUNC(unlockTable) {
 	waitFor("结算完成");
 	//alertInfo("unlocked", "", 0);
-	getWidgetByName("use")->visible = true;
-	getWidgetByName("finish")->visible = true;
 	return 0;
 }
 
@@ -51,21 +47,55 @@ void useCard(widgetObj *w) {
 			lockTable();
 			createThread(unlockTable, NULL);
 
-			int aim = manager->getPosition();
 			struct JSON *json = createJson();
-			setStringContent(json, "inst", (char *)"绩点变化");
-			setIntContent(json, "amount", 1);
-			setIntContent(json, "room", roomId);
-			setIntContent(json, "position", manager->getPosition());
+			setStringContent(json, "inst", (char *)"使用手牌");
 			setStringContent(json, "action", (char *)"study");
 			setObjectContent(json, "card", card[0].toJson());
-			setIntContent(json, "aim", aim);
-
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
 			socketSend(client, writeJson(json));
-			freeJson(json);
 
+			freeJson(json);
 			removePoker(drop);
 			break;
+		}
+		case CC_SCRIPT:
+		case CC_LOLI:
+		case CC_VIRUS:
+		case CC_LINE:
+		case CC_OFFLINE:
+		case CC_BOOM:
+		case CC_SPINPEN:
+		case CC_PTA:
+		case CC_CHICKEN:
+		case CC_CHAIRMAN:
+		case CC_GUARD:
+		case CC_KEYBOARD:
+		case CC_FLYING:
+		case CC_GLASSES:
+		case CC_GTX:
+		case CC_DBELEPHANT:
+		case CC_MOTOR:
+		case CC_BUS:
+		case CC_ARM:
+		case CC_LAKE:
+		case CC_MOUNTAIN:
+		case CC_BUILDING:
+		case CC_FOREST: {
+			lockTable();
+			createThread(unlockTable, NULL);
+
+			struct JSON *json = createJson();
+			setStringContent(json, "inst", (char *)"使用手牌");
+			setStringContent(json, "action", (char *)"equip");
+			setObjectContent(json, "card", card[0].toJson());
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
+			socketSend(client, writeJson(json));
+
+			freeJson(json);
+			removePoker(drop);
+			addEquip(card[0], manager->getPosition(), 0);
 		}
 		default:
 			break;
@@ -150,8 +180,19 @@ void dropCard(widgetObj *w) {
 	setWidgetTop("drop");
 	deleteWidgetByName("drop");
 }
+NEW_THREAD_FUNC(cardReplyThread) {
+	waitFor("结算完成");
+
+	struct JSON *reply = createJson();
+	setStringContent(reply, "inst", (char *)"结算完成");
+	setIntContent(reply, "room", roomId);
+	setIntContent(reply, "position", manager->getPosition());
+	socketSend(client, writeJson(reply));
+	freeJson(reply);
+	return 0;
+}
 void cardReply(widgetObj *w) {
-	deleteWidgetByName("deny");
+	deleteWidgetByName("reply");
 	deleteWidgetByName("cancel");
 
 	vector<Card> card;
@@ -166,22 +207,30 @@ void cardReply(widgetObj *w) {
 		switch (card[0].cont) {
 		case CC_DENY: {
 			struct JSON *reply = createJson();
+			setStringContent(reply, "inst", (char *)"打出手牌");
 			setIntContent(reply, "room", roomId);
 			setIntContent(reply, "position", manager->getPosition());
-
-			setStringContent(reply, "inst", (char *)"打出手牌");
 			setStringContent(reply, "action", (char *)"deny");
+			setObjectContent(reply, "card", card[0].toJson());
+			socketSend(client, writeJson(reply));
+			freeJson(reply);
+
+			removePoker(drop);
+			createThread(cardReplyThread, NULL);
+			break;
+		}
+		case CC_STUDY: {
+			struct JSON *reply = createJson();
+			setStringContent(reply, "inst", (char *)"打出手牌");
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+			setStringContent(reply, "action", (char *)"study");
+			setIntContent(reply, "aim", manager->dying);
 			setObjectContent(reply, "card", card[0].toJson());
 			socketSend(client, writeJson(reply));
 
 			removePoker(drop);
-			waitFor("结算完成");
-
-			setStringContent(reply, "inst", (char *)"结算完成");
-			deleteContent(reply, "action");
-			deleteContent(reply, "card");
-			socketSend(client, writeJson(reply));
-			freeJson(reply);
+			createThread(cardReplyThread, NULL);
 			break;
 		}
 		default:
@@ -189,10 +238,7 @@ void cardReply(widgetObj *w) {
 		}
 	}
 }
-void preventWound(widgetObj *w) {
-	deleteWidgetByName("deny");
-	deleteWidgetByName("cancel");
-
+NEW_THREAD_FUNC(preventWoundThread) {
 	struct JSON *reply = createJson();
 	setIntContent(reply, "room", roomId);
 	setIntContent(reply, "position", manager->getPosition());
@@ -207,8 +253,18 @@ void preventWound(widgetObj *w) {
 	deleteContent(reply, "amount");
 	socketSend(client, writeJson(reply));
 	freeJson(reply);
+	return 0;
+}
+void preventWound(widgetObj *w) {
+	deleteWidgetByName("reply");
+	deleteWidgetByName("cancel");
+
+	createThread(preventWoundThread, NULL);
 }
 void noOperation(widgetObj *w) {
+	deleteWidgetByName("reply");
+	deleteWidgetByName("cancel");
+
 	struct JSON *reply = createJson();
 	setStringContent(reply, "inst", (char *)"结算完成");
 	setIntContent(reply, "room", roomId);
@@ -217,22 +273,46 @@ void noOperation(widgetObj *w) {
 	freeJson(reply);
 }
 void layoutPlaying() {
-	easyWidget(SG_OUTPUT, "self", 500, 300, 120, 160,
+	widgetObj *selfCard = newWidget(SG_OUTPUT, "card");
+	selfCard->size.x = 120;
+	selfCard->size.y = 160;
+	strcpy((char *)selfCard->content,
 		(killerName[manager->getSelf()->getKiller()] + string("\n") +
-		std::to_string(manager->getSelf()->getHealth()) + "/" +
-		std::to_string(manager->getSelf()->getFull())).data(), NULL);
-	getWidgetByName("self")->tf.size = 32;
+			std::to_string(manager->getSelf()->getHealth()) + "/" +
+			std::to_string(manager->getSelf()->getFull())).data());
+	selfCard->tf.size = 32;
+	widgetObj *selfCombine = newCombinedWidget(1, "self", selfCard);
+	selfCombine->pos.x = 500;
+	selfCombine->pos.y = 300;
+	registerWidget(selfCombine);
+
 	int num = manager->getPlayer().size();
 	int pos = manager->getPosition();
 	for (int i = 1; i < num; i++) {
-		easyWidget(SG_OUTPUT,
+		widgetObj *enemyCard = newWidget(SG_OUTPUT, "card");
+		enemyCard->size.x = 90;
+		enemyCard->size.y = 120;
+		strcpy((char *)enemyCard->content,
+			(killerName[manager->getPlayer()[(pos + i) % num]->getKiller()] + string("\n") +
+				std::to_string(manager->getPlayer()[(pos + i) % num]->getHealth()) + "/" +
+				std::to_string(manager->getPlayer()[(pos + i) % num]->getFull())).data());
+		enemyCard->tf.size = 20;
+		enemyCard->mouseUser = (mouseClickUser)aimEnemy;
+		widgetObj *enemyCombine = newCombinedWidget(1,
+			(string("enemy") + std::to_string((pos + i) % num)).data(), enemyCard);
+		enemyCombine->pos.x = 10 + 80 * (i - 1);
+		enemyCombine->pos.y = 10;
+		enemyCombine->value = (pos + i) % num;
+		registerWidget(enemyCombine);
+
+		/*easyWidget(SG_OUTPUT,
 			(string("enemy") + std::to_string((pos + i) % num)).data(),
-			10 + 80 * (i - 1), 10, 60, 80,
+			10 + 80 * (i - 1), 10, 90, 120,
 			(killerName[manager->getPlayer()[(pos + i) % num]->getKiller()] + string("\n") +
 				std::to_string(manager->getPlayer()[(pos + i) % num]->getHealth()) + "/" +
 				std::to_string(manager->getPlayer()[(pos + i) % num]->getFull())).data(),
 			(mouseClickUser)aimEnemy);
-		getWidgetByName((string("enemy") + std::to_string((pos + i) % num)).data())->value = (pos + i) % num;
+		getWidgetByName((string("enemy") + std::to_string((pos + i) % num)).data())->value = (pos + i) % num;*/
 	}
 	easyWidget(SG_LABEL, "instruction", 10, 450, 480, 20, "", NULL);
 	getWidgetByName("instruction")->tf.size = 16;
@@ -356,6 +436,58 @@ NEW_THREAD_FUNC(useReceiveProcess) {
 			easyWidget(SG_BUTTON, "cancel", 400, 300, 80, 24, "取消", (mouseClickUser)preventWound);
 		}
 	}
+	if (action == "study") {
+		int pos = getContent(json, "position")->data.json_int;
+		if (pos == manager->getPosition()) {
+			struct JSON *reply = createJson();
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+
+			setStringContent(reply, "inst", (char *)"绩点变化");
+			setIntContent(reply, "amount", 1);
+			socketSend(client, writeJson(reply));
+
+			waitFor("结算完成");
+
+			setStringContent(reply, "inst", (char *)"结算完成");
+			deleteContent(reply, "amount");
+			socketSend(client, writeJson(reply));
+			freeJson(reply);
+		}
+	}
+	if (action == "equip") {
+		if (getContent(json, "position")->data.json_int != manager->getPosition()) {
+			addEquip(Card(getContent(json, "card")->data.json_object),
+				getContent(json, "position")->data.json_int,
+				(getContent(json, "position")->data.json_int - manager->getPosition() + manager->getPlayer().size()) % manager->getPlayer().size());
+		}
+	}
+	freeJson(json);
+	return 0;
+}
+NEW_THREAD_FUNC(replyReceiveProcess) {
+	struct JSON *json = (struct JSON *)param;
+	string action = getContent(json, "action")->data.json_string;
+
+	if (action == "study") {
+		int pos = getContent(json, "aim")->data.json_int;
+		if (pos == manager->getPosition()) {
+			struct JSON *reply = createJson();
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+
+			setStringContent(reply, "inst", (char *)"绩点变化");
+			setIntContent(reply, "amount", 1);
+			socketSend(client, writeJson(reply));
+
+			waitFor("结算完成");
+
+			setStringContent(reply, "inst", (char *)"结算完成");
+			deleteContent(reply, "amount");
+			socketSend(client, writeJson(reply));
+			freeJson(reply);
+		}
+	}
 	freeJson(json);
 	return 0;
 }
@@ -363,27 +495,38 @@ NEW_THREAD_FUNC(gradeChangeProcess) {
 	struct JSON *json = (struct JSON *)param;
 	int obj = getContent(json, "position")->data.json_int;
 	int amount = getContent(json, "amount")->data.json_int;
+	int left;
 	if (obj != manager->getPosition()) {
 		if (amount < 0)
-			manager->getPlayer()[obj]->hurtHealth(-amount);
+			left = manager->getPlayer()[obj]->hurtHealth(-amount);
 		else
-			manager->getPlayer()[obj]->recureHealth(amount);
+			left = manager->getPlayer()[obj]->recureHealth(amount);
 		strcpy((char *)getWidgetByName((string("enemy") + std::to_string(obj)).data())->content,
 			(killerName[manager->getPlayer()[obj]->getKiller()] + string("\n") +
 				std::to_string(manager->getPlayer()[obj]->getHealth()) + "/" +
 				std::to_string(manager->getPlayer()[obj]->getFull())).data());
 		getWidgetByName((string("enemy") + std::to_string(obj)).data())->valid = 0;
+		if (left < 1) {
+			manager->dying = obj;
+			easyWidget(SG_BUTTON, "reply", 300, 300, 80, 24, "打出", (mouseClickUser)cardReply);
+			easyWidget(SG_BUTTON, "cancel", 400, 300, 80, 24, "取消", (mouseClickUser)noOperation);
+		}
 	}
 	else {
 		if (amount < 0)
-			manager->getSelf()->hurtHealth(-amount);
+			left = manager->getSelf()->hurtHealth(-amount);
 		else
-			manager->getSelf()->recureHealth(amount);
+			left = manager->getSelf()->recureHealth(amount);
 		strcpy((char *)getWidgetByName("self")->content,
 			(killerName[manager->getSelf()->getKiller()] + string("\n") +
 				std::to_string(manager->getSelf()->getHealth()) + "/" +
 				std::to_string(manager->getSelf()->getFull())).data());
 		getWidgetByName("self")->valid = 0;
+		if (left < 1) {
+			manager->dying = obj;
+			easyWidget(SG_BUTTON, "reply", 300, 300, 80, 24, "打出", (mouseClickUser)cardReply);
+			easyWidget(SG_BUTTON, "cancel", 400, 300, 80, 24, "取消", (mouseClickUser)noOperation);
+		}
 	}
 	freeJson(json);
 	return 0;

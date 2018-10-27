@@ -160,3 +160,6 @@ public:
 		return health;
 	}
 };
+
+void addEquip(Card c, int playerPos, int deltaPos);
+void removeEquip(int type, int pos);

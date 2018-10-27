@@ -12,7 +12,11 @@ vector<Room *> roomList;
 using std::cout;
 using std::endl;
 
-void mainHandler(char *str, SOCKET socket) {
+NEW_THREAD_FUNC(mainHandler) {
+	char *str = (char *)param;
+	SOCKET socket;
+	memcpy(&socket, (char *)param + strlen((char *)param) + 1, sizeof(socket));
+
 	struct JSON *json = readJson(str);
 	string inst = getContent(json, "inst")->data.json_string;
 
@@ -63,21 +67,27 @@ void mainHandler(char *str, SOCKET socket) {
 	}
 
 	freeJson(json);
+	free(param);
+	return 0;
 }
 NEW_THREAD_FUNC(singleMsg) {
-	SOCKET tmp = connection;
+	SOCKET tmp = *(SOCKET *)param;
 	char buffer[256] = { 0 };
 	char *buf;
 
 	while (socketReceive(tmp, buffer, 256) != SG_CONNECTION_FAILED) {
 		buf = buffer;
 		while (buf[0]) {
-			mainHandler(buf, tmp);
+			char *param = (char *)malloc(256);
+			memcpy(param, buf, strlen(buf) + 1);
+			memcpy(param + strlen(buf) + 1, &tmp, sizeof(tmp));
+			createThread(mainHandler, param);
 			buf += strlen(buf) + 1;
 		}
 		memset(buffer, 0, 256);
 	}
 	closeSocket(tmp);
+	free(param);
 	return 0;
 }
 NEW_THREAD_FUNC(socketResponse) {
@@ -85,7 +95,10 @@ NEW_THREAD_FUNC(socketResponse) {
 	while (1) {
 		connection = acceptOne(server);
 		setsockopt(connection, SOL_SOCKET, TCP_NODELAY, (const char *)&nodelay, sizeof(bool));
-		createThread(singleMsg, NULL);
+
+		SOCKET *param = (SOCKET *)malloc(sizeof(SOCKET));
+		*param = connection;
+		createThread(singleMsg, param);
 	}
 	return 0;
 }
