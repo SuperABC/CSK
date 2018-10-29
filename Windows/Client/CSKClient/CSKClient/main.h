@@ -39,6 +39,4 @@ void clearKiller();
 void layoutPlaying();
 void clearPlaying();
 
-void lockTable();
-void unlockTable();
 void tableLoop();

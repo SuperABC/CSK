@@ -112,7 +112,7 @@ protected:
 	string name;
 
 	int full, health;
-	bool steam, back;
+	bool steam, back, stayup;
 
 	Deck handCards, equipCards, judgeCards, funcCards;
 
@@ -159,7 +159,21 @@ public:
 		if (health > full)health = full;
 		return health;
 	}
+	Card addEquip(Card c) {
+		Card ret = equipCards.cont[equipType(c)];
+		equipCards.cont[equipType(c)] = c;
+		return ret;
+	}
+	void removeEquip(EQUIPTYPE t) {
+		equipCards.cont[t] = Card();
+	}
+	void useStayup() {
+		stayup = true;
+	}
+	void clearStayup() {
+		stayup = false;
+	}
 };
 
 void addEquip(Card c, int playerPos, int deltaPos);
-void removeEquip(int type, int pos);
+void removeEquip(int type, int playerPos, int deltaPos);

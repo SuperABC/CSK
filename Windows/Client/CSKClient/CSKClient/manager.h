@@ -50,9 +50,9 @@ public:
 		int right = (i - j + live) % live;
 		int dist = left < right ? left : right;
 
-		if (players[i]->getEquipCards().cont[3].cont != CC_NULL)
+		if (players[i]->getEquipCards().cont[ET_VEHICLE].cont != CC_NULL)
 			dist--;
-		if (players[j]->getEquipCards().cont[2].cont != CC_NULL)
+		if (players[j]->getEquipCards().cont[ET_BARRIER].cont != CC_NULL)
 			dist++;
 
 		if (dist < 1)dist = 1;

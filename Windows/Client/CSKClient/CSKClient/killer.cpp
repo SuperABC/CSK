@@ -383,137 +383,113 @@ Killer *Killer::newKiller(KILLER k, int p) {
 }
 
 void addEquip(Card c, int playerPos, int deltaPos) {
-	int posx, posy, tfsize;
+	string name;
+
 	if (deltaPos == 0) {
-		posx = 508;
-		posy = 380;
-		tfsize = 20;
+		name = "self";
 	}
 	else {
-		posx = 16 + 80 * (deltaPos - 1);
-		posy = 70;
-		tfsize = 12;
+		name = string("enemy" + std::to_string(playerPos));
 	}
+
 	switch (c.cont) {
 	case CC_SCRIPT:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "卖弱脚本", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "卖弱脚本");
 		break;
 	case CC_LOLI:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "水手服", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "水手服");
 		break;
 	case CC_VIRUS:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "病毒", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "病毒");
 		break;
 	case CC_LINE:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "网线", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "网线");
 		break;
 	case CC_OFFLINE:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "盗版系统", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "盗版系统");
 		break;
 	case CC_BOOM:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "抖音视频", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "抖音视频");
 		break;
 	case CC_SPINPEN:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "转转笔", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "转转笔");
 		break;
 	case CC_PTA:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "互评账号", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "互评账号");
 		break;
 	case CC_CHICKEN:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "大逃杀", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "大逃杀");
 		break;
 	case CC_CHAIRMAN:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "主席语录", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "主席语录");
 		break;
 	case CC_GUARD:
-		easyWidget(SG_LABEL, (string("weapon" + std::to_string(playerPos)).data()),
-			posx, posy, 60, 10, "保安制服", NULL);
-		getWidgetByName((string("weapon" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "保安制服");
 		break;
 	case CC_KEYBOARD:
-		easyWidget(SG_LABEL, (string("defender" + std::to_string(playerPos)).data()),
-			posx, posy + tfsize, 60, 10, "红轴键盘", NULL);
-		getWidgetByName((string("defender" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "defender")->content, "红轴键盘");
 		break;
 	case CC_FLYING:
-		easyWidget(SG_LABEL, (string("defender" + std::to_string(playerPos)).data()),
-			posx, posy + tfsize, 60, 10, "飞行模式", NULL);
-		getWidgetByName((string("defender" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "defender")->content, "飞行模式");
 		break;
 	case CC_GLASSES:
-		easyWidget(SG_LABEL, (string("defender" + std::to_string(playerPos)).data()),
-			posx, posy + tfsize, 60, 10, "黑框眼镜", NULL);
-		getWidgetByName((string("defender" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "defender")->content, "黑框眼镜");
 		break;
 	case CC_GTX:
-		easyWidget(SG_LABEL, (string("defender" + std::to_string(playerPos)).data()),
-			posx, posy + tfsize, 60, 10, "集成显卡", NULL);
-		getWidgetByName((string("defender" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "defender")->content, "集成显卡");
 		break;
 	case CC_DBELEPHANT:
-		easyWidget(SG_LABEL, (string("defender" + std::to_string(playerPos)).data()),
-			posx, posy + tfsize, 60, 10, "对象", NULL);
-		getWidgetByName((string("defender" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "defender")->content, "对象");
 		break;
 	case CC_MOTOR:
-		easyWidget(SG_LABEL, (string("vehicle" + std::to_string(playerPos)).data()),
-			posx, posy + 2 * tfsize, 60, 10, "小龟", NULL);
-		getWidgetByName((string("vehicle" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "vehicle")->content, "小龟");
 		break;
 	case CC_BUS:
-		easyWidget(SG_LABEL, (string("vehicle" + std::to_string(playerPos)).data()),
-			posx, posy + 2 * tfsize, 60, 10, "校车", NULL);
-		getWidgetByName((string("vehicle" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "vehicle")->content, "校车");
 		break;
 	case CC_ARM:
-		easyWidget(SG_LABEL, (string("vehicle" + std::to_string(playerPos)).data()),
-			posx, posy + 2 * tfsize, 60, 10, "翅膀", NULL);
-		getWidgetByName((string("vehicle" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "vehicle")->content, "翅膀");
 		break;
 	case CC_LAKE:
-		easyWidget(SG_LABEL, (string("barrier" + std::to_string(playerPos)).data()),
-			posx, posy + 3 * tfsize, 60, 10, "启真湖", NULL);
-		getWidgetByName((string("barrier" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "barrier")->content, "启真湖");
 		break;
 	case CC_MOUNTAIN:
-		easyWidget(SG_LABEL, (string("barrier" + std::to_string(playerPos)).data()),
-			posx, posy + 3 * tfsize, 60, 10, "老和山", NULL);
-		getWidgetByName((string("barrier" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "barrier")->content, "老和山");
 		break;
 	case CC_BUILDING:
-		easyWidget(SG_LABEL, (string("barrier" + std::to_string(playerPos)).data()),
-			posx, posy + 3 * tfsize, 60, 10, "行政楼", NULL);
-		getWidgetByName((string("barrier" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "barrier")->content, "行政楼");
 		break;
 	case CC_FOREST:
-		easyWidget(SG_LABEL, (string("barrier" + std::to_string(playerPos)).data()),
-			posx, posy + 3 * tfsize, 60, 10, "校友林", NULL);
-		getWidgetByName((string("barrier" + std::to_string(playerPos)).data()))->tf.size = tfsize;
+		strcpy((char *)getSubWidget(name.data(), "barrier")->content, "校友林");
 		break;
 	default:
 		return;
 	}
 }
-void removeEquip(int type, int pos) {
+void removeEquip(int type, int playerPos, int deltaPos) {
+	string name;
 
+	if (deltaPos == 0) {
+		name = "self";
+	}
+	else {
+		name = string("enemy" + std::to_string(playerPos));
+	}
+
+	switch (type) {
+	case ET_WEAPON:
+		strcpy((char *)getSubWidget(name.data(), "weapon")->content, "");
+		break;
+	case ET_DEFENDER:
+		strcpy((char *)getSubWidget(name.data(), "defender")->content, "");
+		break;
+	case ET_VEHICLE:
+		strcpy((char *)getSubWidget(name.data(), "vehicle")->content, "");
+		break;
+	case ET_BARRIER:
+		strcpy((char *)getSubWidget(name.data(), "barrier")->content, "");
+		break;
+	default:
+		return;
+	}
 }

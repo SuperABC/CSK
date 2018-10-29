@@ -54,6 +54,12 @@ NEW_THREAD_FUNC(mainHandler) {
 		char *cardCont = getContent(json, "action")->data.json_string;
 		replyProcess(str, roomId, playerPos, cardCont);
 	}
+	else if (inst == "ÆúÖÃ¿¨ÅÆ") {
+		int roomId = getContent(json, "room")->data.json_int;
+		int playerPos = getContent(json, "position")->data.json_int;
+		Card dropCard = getContent(json, "card")->data.json_object;
+		lossProcess(str, roomId, playerPos, dropCard);
+	}
 	else if (inst == "½áËãÍê³É") {
 		int roomId = getContent(json, "room")->data.json_int;
 		int playerPos = getContent(json, "position")->data.json_int;

@@ -23,6 +23,12 @@ void waitFor(const char *inst) {
 	waitingList.push_back(0);
 	while (waitingList.size() > level);
 }
+NEW_THREAD_FUNC(waitGoaway) {
+	waitFor("结算完成");
+	int action = *(char *)param;
+
+	return 0;
+}
 void lockTable() {
 	//alertInfo("locked", "", 0);
 }
@@ -31,6 +37,7 @@ NEW_THREAD_FUNC(unlockTable) {
 	//alertInfo("unlocked", "", 0);
 	return 0;
 }
+
 
 void useCard(widgetObj *w) {
 	vector<Card> card;
@@ -50,6 +57,22 @@ void useCard(widgetObj *w) {
 			struct JSON *json = createJson();
 			setStringContent(json, "inst", (char *)"使用手牌");
 			setStringContent(json, "action", (char *)"study");
+			setObjectContent(json, "card", card[0].toJson());
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
+			socketSend(client, writeJson(json));
+
+			freeJson(json);
+			removePoker(drop);
+			break;
+		}
+		case CC_STAYUP: {
+			lockTable();
+			createThread(unlockTable, NULL);
+
+			struct JSON *json = createJson();
+			setStringContent(json, "inst", (char *)"使用手牌");
+			setStringContent(json, "action", (char *)"stayup");
 			setObjectContent(json, "card", card[0].toJson());
 			setIntContent(json, "room", roomId);
 			setIntContent(json, "position", manager->getPosition());
@@ -95,7 +118,6 @@ void useCard(widgetObj *w) {
 
 			freeJson(json);
 			removePoker(drop);
-			addEquip(card[0], manager->getPosition(), 0);
 		}
 		default:
 			break;
@@ -113,11 +135,21 @@ void aimEnemy(widgetObj *w) {
 	}
 	if (card.size() == 1) {
 		switch (card[0].cont) {
-		case CC_PREVENT: {
+		case CC_PREVENT: 
+		case CC_COMMERCE:
+		case CC_PARTY:{
+			int aim = w->value % manager->getPlayer().size();
+			if (manager->getSelf()->getEquipCards().cont[ET_WEAPON].cont == CC_NULL) {
+				if (manager->calDist(manager->getPosition(), aim) > 1)break;
+			}
+			else {
+				if (manager->calDist(manager->getPosition(), aim) >
+					weaponDist(manager->getSelf()->getEquipCards().cont[ET_WEAPON]))break;
+			}
+
 			lockTable();
 			createThread(unlockTable, NULL);
 
-			int aim = w->value % manager->getPlayer().size();
 			struct JSON *json = createJson();
 			setStringContent(json, "inst", (char *)"使用手牌");
 			setIntContent(json, "room", roomId);
@@ -132,6 +164,26 @@ void aimEnemy(widgetObj *w) {
 			removePoker(drop);
 			break;
 		}
+		case CC_HACK: {
+			int aim = w->value % manager->getPlayer().size();
+			lockTable();
+			createThread(unlockTable, NULL);
+
+			struct JSON *json = createJson();
+			setStringContent(json, "inst", (char *)"使用手牌");
+			setIntContent(json, "room", roomId);
+			setIntContent(json, "position", manager->getPosition());
+			setStringContent(json, "action", (char *)"hack");
+			setObjectContent(json, "card", card[0].toJson());
+			setIntContent(json, "aim", aim);
+
+			socketSend(client, writeJson(json));
+			freeJson(json);
+
+			removePoker(drop);
+			createThread(waitGoaway, (void *)"hack");
+			break;
+		}
 		default:
 			break;
 		}
@@ -139,12 +191,11 @@ void aimEnemy(widgetObj *w) {
 }
 void finishUse(widgetObj *w) {
 	struct JSON *ret = createJson();
-
 	setStringContent(ret, "inst", (char *)"出牌结束");
 	setIntContent(ret, "room", roomId);
 	socketSend(client, writeJson(ret));
-
 	freeJson(ret);
+
 	setWidgetTop("use");
 	deleteWidgetByName("use");
 	setWidgetTop("finish");
@@ -191,10 +242,10 @@ NEW_THREAD_FUNC(cardReplyThread) {
 	freeJson(reply);
 	return 0;
 }
+NEW_THREAD_FUNC(goawayReplyThread) {
+	return 0;
+}
 void cardReply(widgetObj *w) {
-	deleteWidgetByName("reply");
-	deleteWidgetByName("cancel");
-
 	vector<Card> card;
 	vector<int> drop;
 	for (unsigned int i = 0; i < pokerList.size(); i++) {
@@ -206,6 +257,9 @@ void cardReply(widgetObj *w) {
 	if (card.size() == 1) {
 		switch (card[0].cont) {
 		case CC_DENY: {
+			deleteWidgetByName("reply");
+			deleteWidgetByName("cancel");
+
 			struct JSON *reply = createJson();
 			setStringContent(reply, "inst", (char *)"打出手牌");
 			setIntContent(reply, "room", roomId);
@@ -220,6 +274,9 @@ void cardReply(widgetObj *w) {
 			break;
 		}
 		case CC_STUDY: {
+			deleteWidgetByName("reply");
+			deleteWidgetByName("cancel");
+
 			struct JSON *reply = createJson();
 			setStringContent(reply, "inst", (char *)"打出手牌");
 			setIntContent(reply, "room", roomId);
@@ -232,6 +289,28 @@ void cardReply(widgetObj *w) {
 			removePoker(drop);
 			createThread(cardReplyThread, NULL);
 			break;
+		}
+		case CC_STAYUP: {
+			if (manager->dying != manager->getPosition())break;
+
+			deleteWidgetByName("reply");
+			deleteWidgetByName("cancel");
+
+			struct JSON *reply = createJson();
+			setStringContent(reply, "inst", (char *)"打出手牌");
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+			setStringContent(reply, "action", (char *)"study");
+			setIntContent(reply, "aim", manager->dying);
+			setObjectContent(reply, "card", card[0].toJson());
+			socketSend(client, writeJson(reply));
+
+			removePoker(drop);
+			createThread(cardReplyThread, NULL);
+			break;
+		}
+		case CC_GOAWAY: {
+			createThread(goawayReplyThread, NULL);
 		}
 		default:
 			break;
@@ -275,13 +354,38 @@ void noOperation(widgetObj *w) {
 void layoutPlaying() {
 	widgetObj *selfCard = newWidget(SG_OUTPUT, "card");
 	selfCard->size.x = 120;
-	selfCard->size.y = 160;
+	selfCard->size.y = 161;
 	strcpy((char *)selfCard->content,
 		(killerName[manager->getSelf()->getKiller()] + string("\n") +
 			std::to_string(manager->getSelf()->getHealth()) + "/" +
 			std::to_string(manager->getSelf()->getFull())).data());
 	selfCard->tf.size = 32;
-	widgetObj *selfCombine = newCombinedWidget(1, "self", selfCard);
+	widgetObj *selfWeapon = newWidget(SG_LABEL, "weapon");
+	selfWeapon->pos.x = 10;
+	selfWeapon->pos.y = 80;
+	selfWeapon->size.x = 100;
+	selfWeapon->size.y = 20;
+	selfWeapon->tf.size = 20;
+	widgetObj *selfDefender = newWidget(SG_LABEL, "defender");
+	selfDefender->pos.x = 10;
+	selfDefender->pos.y = 100;
+	selfDefender->size.x = 100;
+	selfDefender->size.y = 20;
+	selfDefender->tf.size = 20;
+	widgetObj *selfVehicle = newWidget(SG_LABEL, "vehicle");
+	selfVehicle->pos.x = 10;
+	selfVehicle->pos.y = 120;
+	selfVehicle->size.x = 100;
+	selfVehicle->size.y = 20;
+	selfVehicle->tf.size = 20;
+	widgetObj *selfBarrier = newWidget(SG_LABEL, "barrier");
+	selfBarrier->pos.x = 10;
+	selfBarrier->pos.y = 140;
+	selfBarrier->size.x = 100;
+	selfBarrier->size.y = 20;
+	selfBarrier->tf.size = 20;
+	widgetObj *selfCombine = newCombinedWidget(5, "self", selfCard,
+		selfWeapon, selfDefender, selfVehicle, selfBarrier);
 	selfCombine->pos.x = 500;
 	selfCombine->pos.y = 300;
 	registerWidget(selfCombine);
@@ -291,29 +395,46 @@ void layoutPlaying() {
 	for (int i = 1; i < num; i++) {
 		widgetObj *enemyCard = newWidget(SG_OUTPUT, "card");
 		enemyCard->size.x = 90;
-		enemyCard->size.y = 120;
+		enemyCard->size.y = 121;
 		strcpy((char *)enemyCard->content,
 			(killerName[manager->getPlayer()[(pos + i) % num]->getKiller()] + string("\n") +
 				std::to_string(manager->getPlayer()[(pos + i) % num]->getHealth()) + "/" +
 				std::to_string(manager->getPlayer()[(pos + i) % num]->getFull())).data());
 		enemyCard->tf.size = 20;
 		enemyCard->mouseUser = (mouseClickUser)aimEnemy;
-		widgetObj *enemyCombine = newCombinedWidget(1,
-			(string("enemy") + std::to_string((pos + i) % num)).data(), enemyCard);
+		enemyCard->value = (pos + i) % num;
+		widgetObj *enemyWeapon = newWidget(SG_LABEL, "weapon");
+		enemyWeapon->pos.x = 9;
+		enemyWeapon->pos.y = 60;
+		enemyWeapon->size.x = 72;
+		enemyWeapon->size.y = 15;
+		enemyWeapon->tf.size = 15;
+		widgetObj *enemyDefender = newWidget(SG_LABEL, "defender");
+		enemyDefender->pos.x = 9;
+		enemyDefender->pos.y = 75;
+		enemyDefender->size.x = 72;
+		enemyDefender->size.y = 15;
+		enemyDefender->tf.size = 15;
+		widgetObj *enemyVehicle = newWidget(SG_LABEL, "vehicle");
+		enemyVehicle->pos.x = 9;
+		enemyVehicle->pos.y = 90;
+		enemyVehicle->size.x = 72;
+		enemyVehicle->size.y = 15;
+		enemyVehicle->tf.size = 15;
+		widgetObj *enemyBarrier = newWidget(SG_LABEL, "barrier");
+		enemyBarrier->pos.x = 9;
+		enemyBarrier->pos.y = 105;
+		enemyBarrier->size.x = 72;
+		enemyBarrier->size.y = 15;
+		enemyBarrier->tf.size = 15;
+		widgetObj *enemyCombine = newCombinedWidget(5,
+			(string("enemy") + std::to_string((pos + i) % num)).data(), enemyCard,
+			enemyWeapon, enemyDefender, enemyVehicle, enemyBarrier);
 		enemyCombine->pos.x = 10 + 80 * (i - 1);
 		enemyCombine->pos.y = 10;
-		enemyCombine->value = (pos + i) % num;
 		registerWidget(enemyCombine);
-
-		/*easyWidget(SG_OUTPUT,
-			(string("enemy") + std::to_string((pos + i) % num)).data(),
-			10 + 80 * (i - 1), 10, 90, 120,
-			(killerName[manager->getPlayer()[(pos + i) % num]->getKiller()] + string("\n") +
-				std::to_string(manager->getPlayer()[(pos + i) % num]->getHealth()) + "/" +
-				std::to_string(manager->getPlayer()[(pos + i) % num]->getFull())).data(),
-			(mouseClickUser)aimEnemy);
-		getWidgetByName((string("enemy") + std::to_string((pos + i) % num)).data())->value = (pos + i) % num;*/
 	}
+
 	easyWidget(SG_LABEL, "instruction", 10, 450, 480, 20, "", NULL);
 	getWidgetByName("instruction")->tf.size = 16;
 
@@ -372,6 +493,10 @@ void cardInitProcess(struct JSON *json) {
 }
 void nextStateProcess(struct JSON *json) {
 	STEP step = manager->nextState();
+
+	for (auto k : manager->getPlayer()) {
+		k->clearStayup();
+	}
 
 	if (!manager->myTurn())return;
 	struct JSON *ret = createJson();
@@ -455,12 +580,38 @@ NEW_THREAD_FUNC(useReceiveProcess) {
 			freeJson(reply);
 		}
 	}
+	if (action == "stayup") {
+		int pos = getContent(json, "position")->data.json_int;
+		manager->getPlayer()[pos]->useStayup();
+	}
 	if (action == "equip") {
-		if (getContent(json, "position")->data.json_int != manager->getPosition()) {
-			addEquip(Card(getContent(json, "card")->data.json_object),
-				getContent(json, "position")->data.json_int,
-				(getContent(json, "position")->data.json_int - manager->getPosition() + manager->getPlayer().size()) % manager->getPlayer().size());
+		int pos = getContent(json, "position")->data.json_int;
+		Card drop = manager->getPlayer()[pos]->addEquip(getContent(json, "card")->data.json_object);
+		addEquip(Card(getContent(json, "card")->data.json_object),
+			pos, pos - (manager->getPosition() + manager->getPlayer().size()) % manager->getPlayer().size());
+
+		if (pos == manager->getPosition()) {
+			struct JSON *reply = createJson();
+			setIntContent(reply, "room", roomId);
+			setIntContent(reply, "position", manager->getPosition());
+
+			if (drop.cont != CC_NULL) {
+				setStringContent(reply, "inst", (char *)"弃置卡牌");
+				setObjectContent(reply, "card", drop.toJson());
+				socketSend(client, writeJson(reply));
+
+				waitFor("结算完成");
+			}
+
+			setStringContent(reply, "inst", (char *)"结算完成");
+			deleteContent(reply, "card");
+			socketSend(client, writeJson(reply));
+			freeJson(reply);
 		}
+	}
+	if (action == "hack") {
+		easyWidget(SG_BUTTON, "reply", 300, 300, 80, 24, "打出", (mouseClickUser)cardReply);
+		easyWidget(SG_BUTTON, "cancel", 400, 300, 80, 24, "取消", (mouseClickUser)noOperation);
 	}
 	freeJson(json);
 	return 0;
@@ -501,7 +652,7 @@ NEW_THREAD_FUNC(gradeChangeProcess) {
 			left = manager->getPlayer()[obj]->hurtHealth(-amount);
 		else
 			left = manager->getPlayer()[obj]->recureHealth(amount);
-		strcpy((char *)getWidgetByName((string("enemy") + std::to_string(obj)).data())->content,
+		strcpy((char *)getSubWidget((string("enemy") + std::to_string(obj)).data(), "card")->content,
 			(killerName[manager->getPlayer()[obj]->getKiller()] + string("\n") +
 				std::to_string(manager->getPlayer()[obj]->getHealth()) + "/" +
 				std::to_string(manager->getPlayer()[obj]->getFull())).data());
@@ -517,7 +668,7 @@ NEW_THREAD_FUNC(gradeChangeProcess) {
 			left = manager->getSelf()->hurtHealth(-amount);
 		else
 			left = manager->getSelf()->recureHealth(amount);
-		strcpy((char *)getWidgetByName("self")->content,
+		strcpy((char *)getSubWidget("self", "card")->content,
 			(killerName[manager->getSelf()->getKiller()] + string("\n") +
 				std::to_string(manager->getSelf()->getHealth()) + "/" +
 				std::to_string(manager->getSelf()->getFull())).data());

@@ -88,6 +88,14 @@ public:
 	struct JSON *toJson();
 };
 
+enum EQUIPTYPE {
+	ET_WEAPON,
+	ET_DEFENDER,
+	ET_VEHICLE,
+	ET_BARRIER
+};
+EQUIPTYPE equipType(Card c);
+
 class Deck {
 public:
 	vector<Card> cont;

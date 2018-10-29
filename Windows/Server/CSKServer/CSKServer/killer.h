@@ -234,5 +234,13 @@ public:
 		if (health > full)health = full;
 		return health;
 	}
+	Card addEquip(Card c) {
+		Card ret = equipCards.cont[equipType(c)];
+		equipCards.cont[equipType(c)] = c;
+		return ret;
+	}
+	void removeEquip(EQUIPTYPE t) {
+		equipCards.cont[t] = Card();
+	}
 };
 

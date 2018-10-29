@@ -172,4 +172,7 @@ public:
 		else
 			return players[pos]->recureHealth(amount);
 	}
+	Card addEquip(int pos, Card equip) {
+		return players[pos]->addEquip(equip);
+	}
 };

@@ -149,15 +149,29 @@ void cardProcess(char *recv, int room, int pos, char *cont) {
 		vector<int> waiting;
 		waiting.push_back(getContent(json, "aim")->data.json_int);
 		roomList[room]->manager->waitFor(waiting);
-		roomList[room]->manager->tmpCard.push_back(Card(getContent(json, "card")->data.json_object));
+		roomList[room]->manager->tmpCard.push_back(getContent(json, "card")->data.json_object);
 	}
 	if (string(cont) == "study") {
 		vector<int> waiting;
 		waiting.push_back(pos);
 		roomList[room]->manager->waitFor(waiting);
-		roomList[room]->manager->tmpCard.push_back(Card(getContent(json, "card")->data.json_object));
+		roomList[room]->manager->tmpCard.push_back(getContent(json, "card")->data.json_object);
+	}
+	if (string(cont) == "stayup") {
+		roomList[room]->manager->waitFor(vector<int>());
 	}
 	if (string(cont) == "equip") {
+		roomList[room]->manager->addEquip(pos, getContent(json, "card")->data.json_object);
+
+		vector<int> waiting;
+		waiting.push_back(pos);
+		roomList[room]->manager->waitFor(waiting);
+	}
+	if (string(cont) == "hack") {
+		int level = roomList[room]->manager->waitingLevel();
+		roomList[room]->manager->waitAll();
+		while (roomList[room]->manager->isWaiting(level));
+
 		roomList[room]->manager->waitFor(vector<int>());
 	}
 	while (roomList[room]->manager->isWaiting(level));
@@ -170,6 +184,7 @@ void cardProcess(char *recv, int room, int pos, char *cont) {
 	for (auto c : roomList[room]->manager->tmpCard) {
 		roomList[room]->manager->dropCard(c);
 	}
+	roomList[room]->manager->tmpCard.clear();
 
 	if (roomList[room]->manager->tmpStep == CSK_FINISH) {
 		struct JSON *json;
@@ -206,6 +221,23 @@ void replyProcess(char *recv, int room, int pos, char *cont) {
 	}
 	while (roomList[room]->manager->isWaiting(level));
 	//等待各个客户端对该出牌的响应
+
+	struct JSON *ret = createJson();
+	setStringContent(ret, "inst", (char *)"结算完成");
+	socketSend(roomList[room]->users[pos]->socket, writeJson(ret));
+	freeJson(ret);
+}
+void lossProcess(char *recv, int room, int pos, Card card) {
+	for (unsigned int i = 0; i < roomList[room]->users.size(); i++) {
+		socketSend(roomList[room]->users[i]->socket, recv);
+	}
+
+	struct JSON *json = readJson(recv);
+	roomList[room]->manager->tmpCard.push_back(getContent(json, "card")->data.json_object);
+	int level = roomList[room]->manager->waitingLevel();
+	roomList[room]->manager->waitFor(vector<int>());
+	while (roomList[room]->manager->isWaiting(level));
+	//等待各个客户端对该弃牌的响应
 
 	struct JSON *ret = createJson();
 	setStringContent(ret, "inst", (char *)"结算完成");

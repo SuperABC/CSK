@@ -7,6 +7,8 @@
 using std::string;
 using std::vector;
 
+class Card;
+
 
 void loginProcess(struct JSON *recv, SOCKET socket);
 void roomProcess(struct JSON *recv, SOCKET socket);
@@ -23,6 +25,7 @@ void useProcess(struct JSON *json, int room);
 void dropProcess(struct JSON *json, int room);
 void cardProcess(char *recv, int room, int pos, char *cont);
 void replyProcess(char *recv, int room, int pos, char *cont);
+void lossProcess(char *recv, int room, int pos, Card card);
 void doneProcess(int room, int pos);
 void gradeProcess(char *recv, int room, int pos, int amount);
 

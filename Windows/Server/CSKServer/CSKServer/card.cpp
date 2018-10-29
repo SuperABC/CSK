@@ -8,6 +8,40 @@ struct JSON *Card::toJson() {
 	return json;
 }
 
+EQUIPTYPE equipType(Card c) {
+	switch (c.cont) {
+	case CC_SCRIPT:
+	case CC_LOLI:
+	case CC_VIRUS:
+	case CC_LINE:
+	case CC_OFFLINE:
+	case CC_BOOM:
+	case CC_SPINPEN:
+	case CC_PTA:
+	case CC_CHICKEN:
+	case CC_CHAIRMAN:
+	case CC_GUARD:
+		return ET_WEAPON;
+	case CC_KEYBOARD:
+	case CC_FLYING:
+	case CC_GLASSES:
+	case CC_GTX:
+	case CC_DBELEPHANT:
+		return ET_DEFENDER;
+	case CC_MOTOR:
+	case CC_BUS:
+	case CC_ARM:
+		return ET_VEHICLE;
+	case CC_LAKE:
+	case CC_MOUNTAIN:
+	case CC_BUILDING:
+	case CC_FOREST:
+		return ET_BARRIER;
+	default:
+		return ET_WEAPON;
+	}
+}
+
 string cardName(Card c) {
 	string ret = "";
 	switch (c.color) {
